@@ -80,4 +80,25 @@ const deleteEnquiry = async (req, res, next) => {
 };
 
   
-  module.exports = {createEnquiry,getAllEnquiries,getOwnEnquiries,deleteEnquiry };  
+const getEnquiryById = async (req, res, next) => {
+  const { enquiryId } = req.params;
+
+  try {
+    // Find the enquiry by ID
+    const enquiry = await Enquiry.findById(enquiryId);
+
+    if (!enquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry not found.' });
+    }
+
+    // Respond with the retrieved enquiry
+    res.status(200).json({ success: true, data: enquiry });
+  } catch (error) {
+    // Handle errors
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+module.exports = { createEnquiry, getAllEnquiries, getOwnEnquiries, deleteEnquiry, getEnquiryById };
+

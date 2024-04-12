@@ -3,6 +3,7 @@ const rateLimit = require("express-rate-limit");
 const router = express.Router();
 const {
     registerUser,
+    registerAdmin,
     loginUser,
     logoutUser,
     forgotPassword,
@@ -27,6 +28,8 @@ const {isAuthenticatedUser,authorizeRoles} = require('../middleware/auth')
 // Routes for user authentication and management
 router.route('/register')
     .post(registerUser); // Register a new user
+router.route('/register/admin')
+      .post(registerAdmin)
     
 router.route('/verify-email/:token')
     .get(verifyEmail);

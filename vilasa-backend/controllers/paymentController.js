@@ -40,189 +40,92 @@ exports.processStripePayment = asyncWrapper(async (req, res, next) => {
   });
 });
 
+
 /**
- * @desc    Process payment using Paytm
- * @route   POST /api/payments/paytm
- * @access  Public
- * @param   {number} amount - The payment amount
- * @param   {string} email - Email associated with payment
- * @param   {string} phoneNo - Phone number associated with payment
- */
-exports.processPaytmPayment = asyncWrapper(async (req, res, next) => {
-  const { amount, email, phoneNo } = req.body;
+* @desc    Handle Razorpay webhook response
+* @route   POST /api/payments/razorpay/webhook
+* @access  Public
+*/
+exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
+ const { payload } = req.body;
 
-  var params = {};
-  params["MID"] = process.env.PAYTM_MID;
-  params["WEBSITE"] = process.env.PAYTM_WEBSITE;
-  params["CHANNEL_ID"] = process.env.PAYTM_CHANNEL_ID;
-  params["INDUSTRY_TYPE_ID"] = process.env.PAYTM_INDUSTRY_TYPE;
-  params["ORDER_ID"] = "oid" + uuidv4();
-  params["CUST_ID"] = process.env.PAYTM_CUST_ID;
-  params["TXN_AMOUNT"] = JSON.stringify(amount);
-  params["CALLBACK_URL"] = `https://${req.get("host")}/api/vilasa-v1/payments/paytm/callback`;
-  params["EMAIL"] = email;
-  params["MOBILE_NO"] = phoneNo;
+ // Verify the webhook signature using Razorpay's validateWebhookSignature method
+ const isWebhookValid = razorpay.validateWebhookSignature(
+   req.headers["x-razorpay-signature"], // Signature from request header
+   JSON.stringify(payload), // Payload data converted to JSON string
+   process.env.RAZORPAY_WEBHOOK_SECRET // Your Razorpay webhook secret
+ );
 
-  let paytmChecksum = paytm.generateSignature(
-    JSON.stringify(params),
-    process.env.PAYTM_MERCHANT_KEY
-  );
-  paytmChecksum
-    .then(function (checksum) {
-      let paytmParams = {
-        ...params,
-        CHECKSUMHASH: checksum,
-      };
+ // If the webhook signature is invalid, return a bad request error
+ if (!isWebhookValid) {
+   return next(new ErrorHandler("Invalid Webhook Signature", 400));
+ }
 
-      res.status(200).json({
-        success: true,
-        paytmParams,
-      });
-    })
-    .catch(function (error) {
-      console.log(error);
-    });
+ const { entity } = payload; // Extract the payment entity from the payload
+
+ try {
+   // Save the payment details to the database using the addPayment function
+   await addPayment(entity);
+
+   // Handle the payment status based on the 'entity' data received from Razorpay
+
+   // Respond with status 200 OK to Razorpay
+   res.status(200).send("Webhook Received");
+ } catch (error) {
+   // If there's an error, handle it appropriately
+   console.error("Error processing webhook:", error);
+   return next(new ErrorHandler("Internal Server Error", 500));
+ }
 });
 
 /**
- * @desc    Handle Paytm callback response
- * @route   POST /api/payments/paytm/callback
- * @access  Public
- */
-exports.paytmResponse = (req, res, next) => {
-  let paytmChecksum = req.body.CHECKSUMHASH;
-  delete req.body.CHECKSUMHASH;
-
-  let isVerifySignature = paytm.verifySignature(
-    req.body,
-    process.env.PAYTM_MERCHANT_KEY,
-    paytmChecksum
-  );
-
-  if (isVerifySignature) {
-    var paytmParams = {};
-    paytmParams.body = {
-      mid: req.body.MID,
-      orderId: req.body.ORDERID,
-    };
-
-    paytm.generateSignature(
-      JSON.stringify(paytmParams.body),
-      process.env.PAYTM_MERCHANT_KEY
-    ).then(function (checksum) {
-      paytmParams.head = {
-        signature: checksum,
-      };
-
-      var post_data = JSON.stringify(paytmParams);
-      var options = {
-        hostname: "securegw-stage.paytm.in",
-        port: 443,
-        path: "/v3/order/status",
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Content-Length": post_data.length,
-        },
-      };
-
-      var response = "";
-      var post_req = https.request(options, function (post_res) {
-        post_res.on("data", function (chunk) {
-          response += chunk;
-        });
-
-        post_res.on("end", function () {
-          let { body } = JSON.parse(response);
-          addPayment(body);
-          res.redirect(`https://${req.get("host")}/order/${body.orderId}`);
-        });
-      });
-
-      post_req.write(post_data);
-      post_req.end();
-    });
-  } else {
-    console.log("Checksum Mismatched");
-  }
-};
-
-/**
- * @desc    Process payment using Razorpay
- * @route   POST /api/payments/razorpay
- * @access  Public
- * @param   {number} amount - The payment amount
- * @param   {string} currency - The currency for payment (optional)
- * @param   {string} receipt - The payment receipt (optional)
- * @param   {boolean} payment_capture - Payment capture flag (optional)
- */
-exports.processRazorpayPayment = asyncWrapper(async (req, res, next) => {
-  const { amount, currency, receipt, payment_capture } = req.body;
-
-  const options = {
-    amount: amount * 100, // Razorpay expects amount in paise
-    currency: currency || "INR",
-    receipt: receipt || uuidv4(),
-    payment_capture: payment_capture || 1, // Auto-capture payment
-  };
-
-  razorpay.orders.create(options, (err, order) => {
-    if (err) {
-      return next(new ErrorHandler("Payment Failed", 500));
-    }
-
-    res.status(200).json({
-      success: true,
-      orderId: order.id,
-      currency: order.currency,
-      amount: order.amount,
-    });
-  });
-});
-
-/**
- * @desc    Handle Razorpay webhook response
- * @route   POST /api/payments/razorpay/webhook
- * @access  Public
- */
-exports.razorpayWebhook = (req, res, next) => {
-  // Implement Razorpay webhook handling logic here
-};
-
-/**
- * @desc    Save payment details to database
- * @param   {Object} data - Payment data
- * @returns {Promise<void>}
- */
+* @desc    Save payment details to the database
+* @param   {Object} data - Payment data received from Razorpay webhook
+* @returns {Promise<void>}
+*/
 const addPayment = async (data) => {
-  try {
-    await Payment.create(data);
-  } catch (error) {
-    console.log("Payment Failed!");
-  }
+ try {
+   // Create a new Payment document in the database using the Payment model
+   await Payment.create({
+     // Map the data fields received from Razorpay to your Payment model fields
+     orderId: data.order_id, // Example: Map 'orderId' from 'data.order_id'
+     txnId: data.razorpay_payment_id, // Example: Map 'txnId' from 'data.razorpay_payment_id'
+     // Map other fields as required
+   });
+ } catch (error) {
+   console.log("Payment Failed!", error);
+   // Handle the error appropriately
+   throw new Error("Payment Failed");
+ }
 };
 
 /**
- * @desc    Get payment status by order ID
- * @route   GET /api/payments/status/:id
- * @access  Public
- * @param   {string} id - The order ID
- * @returns {Object} Payment status
- */
+* @desc    Get payment status by order ID
+* @route   GET /api/payments/status/:id
+* @access  Public
+* @param   {string} id - The order ID
+* @returns {Object} Payment status
+*/
 exports.getPaymentStatus = asyncWrapper(async (req, res, next) => {
-  const payment = await Payment.findOne({ orderId: req.params.id });
+ const orderId = req.params.id; // Extract the order ID from the request
 
-  if (!payment) {
-    return next(new ErrorHandler("Payment Details Not Found", 404));
-  }
+ try {
+   // Query the Payment model to find payment details by the order ID
+   const payment = await Payment.findOne({ orderId });
 
-  const txn = {
-    id: payment.txnId,
-    status: payment.resultInfo.resultStatus,
-  };
+   if (!payment) {
+     // If payment details are not found, return a not found error
+     return next(new ErrorHandler("Payment Details Not Found", 404));
+   }
 
-  res.status(200).json({
-    success: true,
-    txn,
-  });
+   // If payment details are found, return the payment status to the client
+   res.status(200).json({
+     success: true,
+     payment, // Payment details retrieved from the database
+   });
+ } catch (error) {
+   // If there's an error, handle it appropriately
+   console.error("Error fetching payment status:", error);
+   return next(new ErrorHandler("Internal Server Error", 500));
+ }
 });

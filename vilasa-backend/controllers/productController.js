@@ -129,60 +129,69 @@ exports.getAllProductsAdmin = asyncErrorHandler(async (req, res) => {
  * @desc    Update a product
  * @access  Private (Admin)
  */
+
 exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
-  // Find the product by ID
-  let product = await ProductModel.findById(req.params.id);
+  try {
+    // Find the product by ID
+    let product = await ProductModel.findById(req.params.id);
 
-  // If product is not found, return an error
-  if (!product) {
-    return next(new ErrorHandler("Product not found", 404));
-  }
-
-  // Handle image upload
-  let images = req.body.images || [];
-
-  // Ensure images is an array
-  if (!Array.isArray(images)) {
-    images = [images];
-  }
-
-  // Delete existing images from Cloudinary
-  for (let i = 0; i < product.images.length; i++) {
-    await cloudinary.v2.uploader.destroy(product.images[i].product_id);
-  }
-
-  // Upload new images to Cloudinary
-  const imagesLinks = [];
-  for (let img of images) {
-    const result = await cloudinary.v2.uploader.upload(img, {
-      folder: "Products",
-    });
-
-    imagesLinks.push({
-      product_id: result.public_id,
-      url: result.secure_url,
-    });
-  }
-
-  // Update product data with new images
-  req.body.images = imagesLinks;
-
-  // Update the product in the database
-  product = await ProductModel.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    {
-      new: true,
-      runValidators: true,
-      useFindAndModify: false,
+    // If product is not found, return an error
+    if (!product) {
+      return next(new ErrorHandler("Product not found", 404));
     }
-  );
 
-  // Send response with updated product
-  res.status(200).json({
-    success: true,
-    product: product,
-  });
+    // Handle image upload if images are provided
+    if (req.body.images) {
+      let images = req.body.images;
+
+      // Ensure images is an array
+      if (!Array.isArray(images)) {
+        images = [images];
+      }
+
+      // Delete existing images from Cloudinary
+      for (let i = 0; i < product.images.length; i++) {
+        await cloudinary.v2.uploader.destroy(product.images[i].public_id);
+      }
+
+      // Upload new images to Cloudinary
+      const imagesLinks = [];
+      for (let img of images) {
+        const result = await cloudinary.v2.uploader.upload(img, {
+          folder: "Products",
+        });
+
+        imagesLinks.push({
+          public_id: result.public_id,
+          url: result.secure_url,
+        });
+      }
+
+      // Update product data with new images
+      req.body.images = imagesLinks;
+    }
+
+    // Update the product in the database
+    product = await ProductModel.findByIdAndUpdate(
+      req.params.id,
+      req.body,
+      {
+        new: true,
+        runValidators: true,
+        useFindAndModify: false,
+      }
+    );
+
+    // Send response with updated product
+    res.status(200).json({
+      success: true,
+      product: product,
+    });
+  } catch (error) {
+    // Handle errors
+    console.error(error);
+    next(new ErrorHandler(500, 'An error occurred while updating the product.'));
+  }
 });
 
 
@@ -604,12 +613,27 @@ exports.getProductCountByCategory = asyncErrorHandler(async (req, res, next) => 
 
 // Brand Controller
 
-// Create a new brand
 exports.createBrand = async (req, res, next) => {
   try {
-    const { title, description, picture } = req.body;
-    const brand = await Brand.create({ title, description, picture });
-    res.status(201).json({ success: true, brand });
+    const { title, description } = req.body;
+
+    // Check if picture file is provided
+    if (!req.file) {
+      return next(new ErrorHandler('No picture file provided', 400));
+    }
+
+    // Upload picture to Cloudinary with folder specified
+    cloudinary.uploader.upload(req.file.path, { folder: 'Brand' }, async (error, result) => {
+      if (error) {
+        return next(new ErrorHandler('Error uploading picture to Cloudinary', 500));
+      }
+
+      // Create brand with picture URL from Cloudinary
+      const brand = await Brand.create({ title, description, picture: result.secure_url });
+
+      // Send success response
+      res.status(201).json({ success: true, brand });
+    });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
@@ -625,16 +649,33 @@ exports.getAllBrands = async (req, res, next) => {
   }
 };
 
-// Update a brand by ID
+
 exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description, picture } = req.body;
-    const updatedBrand = await Brand.findByIdAndUpdate(id, { title, description, picture }, { new: true });
-    if (!updatedBrand) {
-      return res.status(404).json({ success: false, message: 'Brand not found' });
+    const { title, description } = req.body;
+
+    // Check if picture file is provided
+    if (req.file) {
+      // Upload picture to Cloudinary with folder specified
+      cloudinary.uploader.upload(req.file.path, { folder: 'Brand' }, async (error, result) => {
+        if (error) {
+          return next(new ErrorHandler('Error uploading picture to Cloudinary', 500));
+        }
+
+        // Update brand with new picture URL from Cloudinary
+        const updatedBrand = await Brand.findByIdAndUpdate(id, { title, description, picture: result.secure_url }, { new: true });
+
+        // Send response with updated brand
+        res.status(200).json({ success: true, brand: updatedBrand });
+      });
+    } else {
+      // If no picture file provided, update brand without picture
+      const updatedBrand = await Brand.findByIdAndUpdate(id, { title, description }, { new: true });
+
+      // Send response with updated brand
+      res.status(200).json({ success: true, brand: updatedBrand });
     }
-    res.status(200).json({ success: true, brand: updatedBrand });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
@@ -656,45 +697,78 @@ exports.deleteBrand = async (req, res, next) => {
 
 // Category Controller
 
-// Create a new category
 exports.createCategory = async (req, res, next) => {
   try {
-    const { title } = req.body;
-    const category = await Category.create({ title });
+    const { title, image } = req.body;
+    let category;
+
+    if (image) {
+      // Upload image to Cloudinary
+      const result = await cloudinary.uploader.upload(image, {
+        folder: 'category_images' // Specify the folder in Cloudinary to store category images
+      });
+      
+      // Create category with image URL
+      category = await Category.create({ title, image: result.secure_url });
+    } else {
+      // If no image provided, create category without image
+      category = await Category.create({ title });
+    }
+
     res.status(201).json({ success: true, category });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
 };
 
-// Get all categories
-exports.getAllCategories = async (req, res, next) => {
-  try {
-    const categories = await Category.find();
-    if (!categories || categories.length === 0) {
-      return res.status(404).json({ success: false, message: 'No categories found' });
-    }
-    res.status(200).json({ success: true, categories });
-  } catch (error) {
-    next(new ErrorHandler(error.message, 500));
-  }
-};
-
-// Update a category by ID
 exports.updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title } = req.body;
-    const updatedCategory = await Category.findByIdAndUpdate(id, { title }, { new: true });
+    const { title, image } = req.body;
+    let updatedCategory;
+
+    if (image) {
+      // Upload new image to Cloudinary
+      const result = await cloudinary.uploader.upload(image, {
+        folder: 'category_images' // Specify the folder in Cloudinary to store category images
+      });
+
+      // Update category with new image URL
+      updatedCategory = await Category.findByIdAndUpdate(id, { title, image: result.secure_url }, { new: true });
+    } else {
+      // If no new image provided, update category without changing the image
+      updatedCategory = await Category.findByIdAndUpdate(id, { title }, { new: true });
+    }
+
     if (!updatedCategory) {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
+    
     res.status(200).json({ success: true, category: updatedCategory });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
 };
 
+exports.getAllCategories = async (req, res, next) => {
+  try {
+    const categories = await Category.find();
+    if (!categories || categories.length === 0) {
+      return res.status(404).json({ success: false, message: 'No categories found' });
+    }
+    
+    // Map categories to include image URLs
+    const categoriesWithImages = categories.map(category => ({
+      _id: category._id,
+      title: category.title,
+      image: category.image ? category.image : null // Include image URL if exists, otherwise null
+    }));
+
+    res.status(200).json({ success: true, categories: categoriesWithImages });
+  } catch (error) {
+    next(new ErrorHandler(error.message, 500));
+  }
+};
 // Delete a category by ID
 exports.deleteCategory = async (req, res, next) => {
   try {
@@ -754,5 +828,128 @@ exports.deleteCoupon = async (req, res, next) => {
     res.status(200).json({ success: true, message: 'Coupon deleted successfully' });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
+  }
+};
+
+// productController.js
+
+/**
+ * @route   GET /api/products/highlights/:highlight
+ * @desc    Get products by highlight
+ * @access  Public
+ */
+exports.getProductsByHighlight = asyncErrorHandler(async (req, res, next) => {
+  try {
+      const highlight = req.params.highlight;
+
+      // Validate highlight input
+      if (!highlight) {
+          return next(new ErrorHandler('Highlight parameter is missing', 400));
+      }
+
+      // Find products by highlight
+      const products = await ProductModel.find({ highlights: highlight }).limit(10);
+
+      // Check if products were found
+      if (!products || products.length === 0) {
+          return next(new ErrorHandler(`No products found for highlight: ${highlight}`, 404));
+      }
+
+      // Send success response with products
+      res.status(200).json({
+          success: true,
+          products: products,
+      });
+  } catch (error) {
+      // Handle any errors that occur
+      return next(new ErrorHandler('Failed to fetch products by highlight', 500));
+  }
+});
+
+/**
+ * @route   GET /api/products/recommendations
+ * @desc    Get random product recommendations
+ * @access  Public
+ */
+exports.getRandomProductRecommendations = asyncErrorHandler(async (req, res, next) => {
+  try {
+    // Fetch all products from the database
+    const allProducts = await ProductModel.find();
+
+    // Check if there are enough products available
+    if (allProducts.length < 8) {
+      return res.status(400).json({ success: false, message: "Not enough products available for recommendations" });
+    }
+
+    // Shuffle the array of products
+    const shuffledProducts = shuffleArray(allProducts);
+
+    // Select the first 8 products as recommendations
+    const recommendations = shuffledProducts.slice(0, 8);
+
+    // Send success response with recommendations
+    res.status(200).json({ success: true, recommendations });
+  } catch (error) {
+    // Handle any errors that occur
+    return next(new ErrorHandler('Failed to fetch random product recommendations', 500));
+  }
+});
+
+// Function to shuffle an array
+function shuffleArray(array) {
+  for (let i = array.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [array[i], array[j]] = [array[j], array[i]];
+  }
+  return array;
+}
+// productController.js
+
+/**
+ * @route   GET /api/products/reviews/landing-page
+ * @desc    Get reviews to show on landing page
+ * @access  Public
+ */
+exports.getReviewsForLandingPage = asyncErrorHandler(async (req, res, next) => {
+  try {
+    // Find reviews where showOnLandingPage is true
+    const reviews = await ProductModel.find({ 'reviews.showOnLandingPage': true });
+
+    // Check if reviews were found
+    if (!reviews || reviews.length === 0) {
+      return next(new ErrorHandler('No reviews found for landing page', 404));
+    }
+
+    // Send success response with reviews
+    res.status(200).json({
+      success: true,
+      reviews: reviews,
+    });
+  } catch (error) {
+    // Handle any errors that occur
+    return next(new ErrorHandler('Failed to fetch reviews for landing page', 500));
+  }
+});
+/**
+ * @route   GET /api/products/reviews
+ * @desc    Get all product reviews
+ * @access  Public
+ */
+exports.getAllProductReviews = async (req, res) => {
+  try {
+    // Find all products and select only the 'reviews' field
+    const reviews = await ProductModel.find({}, 'reviews');
+
+    // Extract reviews from the products
+    const allReviews = reviews.reduce((accumulator, current) => accumulator.concat(current.reviews), []);
+
+    // Send success response with all reviews
+    res.status(200).json({
+      success: true,
+      reviews: allReviews,
+    });
+  } catch (error) {
+    // Handle any errors that occur
+    res.status(500).json({ success: false, message: 'Failed to fetch all product reviews' });
   }
 };

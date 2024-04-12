@@ -158,6 +158,11 @@ const productSchema = new mongoose.Schema({
           }
         }
       ],
+      showOnLandingPage: {
+        type: Boolean,
+        default: false,
+        // Explanation: Indicates whether to show this review on the product landing page. Default value is true.
+      },
       createdAt: {
         type: Date,
         default: Date.now
@@ -177,7 +182,13 @@ const productSchema = new mongoose.Schema({
     type: Date,
     default: Date.now
     // Explanation: Date when the product was created. Default value is the current date.
-  }
+  },
+  offerStartTime: {
+    type: Date, // Combine date and time
+  },
+  offerEndTime: {
+    type: Date, // Combine date and time
+  },
 });
 
 module.exports = mongoose.model('Product', productSchema);

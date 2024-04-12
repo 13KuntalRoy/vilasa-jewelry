@@ -29,7 +29,11 @@ const {
     updateCategory,
     deleteCategory,
     updateCoupon,
-    deleteCoupon
+    deleteCoupon,
+    getProductsByHighlight,
+    getRandomProductRecommendations,
+    getReviewsForLandingPage,
+    getAllProductReviews
 } = require('../controllers/productController');
 
 // Routes for products
@@ -74,7 +78,7 @@ router.route('/products/category/:category/count')
 // Routes for categories
 router.route('/categories')
     .post(isAuthenticatedUser, authorizeRoles('admin'), createCategory)
-    .get(isAuthenticatedUser, getAllCategories);
+    .get(getAllCategories);
 
 // Routes for coupons
 router.route('/coupons')
@@ -91,10 +95,6 @@ router.route('/brands/:id')
   .put(isAuthenticatedUser, authorizeRoles('admin'),updateBrand)
   .delete(isAuthenticatedUser, authorizeRoles('admin'),deleteBrand);
 
-// Categories Routes
-router.route('/categories')
-  .post(isAuthenticatedUser, authorizeRoles('admin'),createCategory)
-  .get(isAuthenticatedUser,getAllCategories);
 
 router.route('/categories/:id')
   .put(isAuthenticatedUser, authorizeRoles('admin'),updateCategory)
@@ -108,5 +108,18 @@ router.route('/coupons')
 router.route('/coupons/:id')
   .put(isAuthenticatedUser, authorizeRoles('admin'),updateCoupon)
   .delete(isAuthenticatedUser, authorizeRoles('admin'),deleteCoupon);
+
+router.route('/highlights/:highlight').get(getProductsByHighlight);
+
+router.route('/recommendations')
+  .get( getRandomProductRecommendations);
+
+router.route('/reviews/landing-page')
+  .get(getReviewsForLandingPage)
+
+router.route('/allreviews')
+  .get(isAuthenticatedUser,authorizeRoles('admin'),getAllProductReviews)
+
+
 
 module.exports = router;

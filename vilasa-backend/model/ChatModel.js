@@ -5,6 +5,7 @@ const chatSchema = new mongoose.Schema({
   receiver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   enquiry: { type: mongoose.Schema.Types.ObjectId, ref: 'Enquiry', required: true },
   message: { type: String, required: true },
+  picture: { type: String },
   senderRole: { type: String, enum: ['user', 'admin'], required: true }, // Role of the sender (user or admin)
   isRead: { type: Boolean, default: false }, // Indicates whether the message has been read
   markedForDeletion: { type: Boolean, default: false }, // Flag to indicate if message is marked for deletion

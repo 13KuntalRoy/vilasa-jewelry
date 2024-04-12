@@ -66,6 +66,68 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
     }
 });
 
+
+// Register a new user
+exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
+    const { name, email, password, gender, avatar,role } = req.body;
+
+    try {
+        // Check if the email is already registered
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return next(new ErrorHandler('User already exists with this email', 400));
+        }
+
+        // Upload avatar to Cloudinary asynchronously
+        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar, {
+            folder: 'avatars',
+            width: 150,
+            crop: 'scale',
+        });
+
+        // Create the new user without saving to database yet
+        const newUser = new User({
+            name,
+            email,
+            password,
+            gender,
+            role,
+            emailVerified: false, // Set emailVerified to false initially
+        });
+
+        // Wait for avatar upload to complete
+        const avatarUpload = await avatarUploadPromise;
+
+        // Update user with avatar details
+        newUser.avatar = {
+            public_id: avatarUpload.public_id,
+            url: avatarUpload.secure_url,
+        };
+
+        // Generate and save verification token
+        const verificationToken = newUser.getVerificationToken();
+        await newUser.save();
+
+        // Send verification email to the new user
+        const verificationUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/verify-email/${verificationToken}`;
+        const message = `Please click on the following link to verify your email address: ${verificationUrl}`;
+        await sendEmail({
+            email: newUser.email,
+            subject: 'Email Verification',
+            message
+        });
+
+        // Respond with success message
+        res.status(201).json({
+            success: true,
+            message: 'Account created successfully. Please verify your email address.',
+        });
+    } catch (error) {
+        next(new ErrorHandler(error.message, 500)); // Pass any error to error handling middleware with status code 500
+    }
+});
+
+
 // Verification route
 exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
     const hashedToken = crypto.createHash('sha256').update(req.params.token).digest('hex');
@@ -295,39 +357,59 @@ exports.getUserById = asyncErrorHandler(async (req, res, next) => {
     }
 });
 
-// Update user details by ID (Admin)
 exports.updateUserById = asyncErrorHandler(async (req, res, next) => {
     try {
-        // Define fields to update
-        const fieldsToUpdate = {
-            name: req.body.name,
-            email: req.body.email,
-            role: req.body.role,
-        };
+        // Ensure the user is authorized as an admin
+        if (req.user.role !== 'admin') {
+            return next(new ErrorHandler(403, 'Unauthorized to access this resource.'));
+        }
 
-        // Find and update user by ID
-        const user = await User.findByIdAndUpdate(req.params.id, fieldsToUpdate, {
-            new: true, // Return updated user
-            runValidators: true, // Run validators for updated fields
-        });
+        // Find user by ID
+        const user = await User.findById(req.params.id);
 
         // Check if user exists
         if (!user) {
             return next(new ErrorHandler(`User not found with id ${req.params.id}`, 404));
         }
 
-        // Send response with updated user
+        // Update user information based on request body
+        for (const key in req.body) {
+            if (req.body.hasOwnProperty(key)) {
+                // If updating the avatar and a file is provided, upload and update the avatar
+                if (key === 'avatar' && req.file) {
+                    const avatarUpload = await cloudinary.uploader.upload(req.file.path, {
+                        folder: 'avatars',
+                        width: 150,
+                        crop: 'scale',
+                    });
+
+                    user.avatar = {
+                        public_id: avatarUpload.public_id,
+                        url: avatarUpload.secure_url,
+                    };
+                } else {
+                    // Otherwise, update other user fields
+                    user[key] = req.body[key];
+                }
+            }
+        }
+
+        // Save the updated user
+        await user.save();
+
+        // Respond with success message
         res.status(200).json({
             success: true,
             message: 'User updated successfully',
             user,
         });
     } catch (error) {
-        // Handle errors
+        // Handle any errors
         console.error(error);
-        next(new ErrorHandler(500, 'An error occurred while updating user details.'));
+        next(new ErrorHandler(500, 'An error occurred while updating user information.'));
     }
 });
+
 // Delete user by ID (Admin)
 exports.deleteUserById = asyncErrorHandler(async (req, res, next) => {
     const user = await User.findById(req.params.id);

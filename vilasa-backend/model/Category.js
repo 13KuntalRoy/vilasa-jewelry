@@ -14,6 +14,12 @@ const categorySchema = new mongoose.Schema({
         index: true,
         lowercase: true,
         // Explanation: Title of the category. Must be unique and indexed for efficient queries. Lowercased for consistency.
+    },
+    // Image URL for the category (optional)
+    image: {
+        type: String,
+        default: '', // Default to empty string if image is not provided
+        // Explanation: URL of the category image. Optional field.
     }
 }, {
     timestamps: true, // Automatically adds createdAt and updatedAt fields

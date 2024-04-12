@@ -22,6 +22,7 @@ const dyurl = require("./routes/urlRoutes");
 const invoice = require("./routes/invoiceRoute");
 const enquiry = require("./routes/enquiryRoute")
 const ErrorHandler = require('./utils/errorHandler');
+const subscriber = require('./routes/subscriberRouter');
 
 // Middleware setup
 app.use(cookieParser()); // Middleware for parsing cookies
@@ -44,6 +45,7 @@ app.use("/api/vilasa-v1/db-img/vilasa", dyimg);
 app.use("/api/vilasa-v1/db-url/vilasa", dyurl);
 app.use("/api/vilasa-v1/order/report",invoice);
 app.use("/api/vilasa-v1/venquiry/f1",enquiry);
+app.use("/api/vilasa-v1/subscriberapi",subscriber);
 
 // Middleware to expose endpoint list only in development mode
 
@@ -72,8 +74,6 @@ app.use((err, req, res, next) => {
       // Send JSON response with error details
       res.status(err.statusCode).json(err.toJSON());
   } else {
-      // If it's not our custom error, handle it differently
-      // For example, log the error and send a generic error response
       console.error(err);
       res.status(500).json({
           success: false,
