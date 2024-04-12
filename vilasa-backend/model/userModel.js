@@ -67,6 +67,8 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken: String,
     // Expiry date for password reset token
     resetPasswordExpire: Date,
+    facebookId: String,
+    googleId: String,
   },
   {
     timestamps: true, // Add createdAt and updatedAt fields automatically

@@ -6,6 +6,103 @@ const sendEmail = require('../utils/sendEmail'); // Import send email utility
 const crypto = require('crypto'); // Import crypto module for generating hash
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
+const passport = require('passport'); // Import passport for authentication
+const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
+const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
+
+// Configure Google OAuth2 client
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
+
+// Configure Facebook OAuth2 strategy with clientID and clientSecret
+passport.use(new FacebookTokenStrategy({
+  clientID: process.env.FACEBOOK_APP_ID, // Provide clientID option
+  clientSecret: process.env.FACEBOOK_APP_SECRET,
+}, async (accessToken, refreshToken, profile, done) => {
+  try {
+    // Check if user exists with Facebook ID
+    let user = await User.findOne({ facebookId: profile.id });
+    if (!user) {
+      // If user doesn't exist, create a new user with Facebook profile
+      user = await User.create({
+        name: profile.displayName,
+        email: profile.emails[0].value,
+        facebookId: profile.id,
+        gender: profile.gender,
+        avatar: {
+          public_id: '', // You can set this based on Facebook profile picture
+          url: '', // You can set this based on Facebook profile picture
+        },
+        role: 'user', // Set default role for new users
+        emailVerified: true, // You can set this based on your email verification process
+      });
+    }
+    done(null, user); // Pass user to the next middleware
+  } catch (error) {
+    done(error); // Pass any error to error handling middleware
+  }
+}));
+
+// Google OAuth2 authentication endpoint
+exports.googleAuth = asyncErrorHandler(async (req, res) => {
+    const { token: googleToken } = req.body; // Rename 'token' to 'googleToken'
+  
+    // Verify Google ID token
+    const ticket = await googleClient.verifyIdToken({
+      idToken: googleToken,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+  
+    // Check if user exists with Google ID
+    let user = await User.findOne({ googleId: payload.sub });
+    if (!user) {
+      // If user doesn't exist, create a new user with Google profile
+      user = await User.create({
+        name: payload.name,
+        email: payload.email,
+        googleId: payload.sub,
+        gender: '', // You can set this based on Google profile
+        avatar: {
+          public_id: '', // You can set this based on Google profile picture
+          url: '', // You can set this based on Google profile picture
+        },
+        role: 'user', // Set default role for new users
+        emailVerified: true, // You can set this based on your email verification process
+      });
+    }
+  
+    // Generate JWT token
+    const authToken = user.generateAuthToken(); // Rename 'token' to 'authToken'
+  
+    // Send JWT token to the client
+    res.status(200).json({
+      success: true,
+      token: authToken, // Rename 'token' to 'authToken'
+    });
+  });
+  
+
+// Facebook OAuth2 authentication endpoint
+exports.facebookAuth = asyncErrorHandler(async (req, res, next) => {
+  passport.authenticate('facebook-token', (err, user, info) => {
+    if (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+    if (!user) {
+      return next(new ErrorHandler('Unauthorized', 401));
+    }
+
+    // Generate JWT token
+    const token = user.generateAuthToken();
+
+    // Send JWT token to the client
+    res.status(200).json({
+      success: true,
+      token,
+    });
+  })(req, res, next);
+});
+
 
 // Register a new user
 exports.registerUser = asyncErrorHandler(async (req, res, next) => {

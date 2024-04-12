@@ -13,7 +13,9 @@ const {
     getUserById,
     updateUserById,
     deleteUserById,
-    verifyEmail
+    verifyEmail,
+    googleAuth,
+    facebookAuth
 } = require('../controllers/userController');
 
 // Rate limit configuration
@@ -57,5 +59,9 @@ router.route('/users/:id')
     .get(isAuthenticatedUser, authorizeRoles('admin'), getUserById) // Get single user by ID (Admin)
     .put(isAuthenticatedUser, authorizeRoles('admin'), updateUserById) // Update user details by ID (Admin)
     .delete(isAuthenticatedUser, authorizeRoles('admin'), deleteUserById); // Delete user by ID (Admin)
+// Google OAuth2 authentication route
+router.route('/google').post(googleAuth);
 
+// Facebook OAuth2 authentication route
+router.route('/facebook').post( facebookAuth);
 module.exports = router;
