@@ -11,7 +11,7 @@ const FacebookTokenStrategy = require('passport-facebook-token'); // Import Face
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
 
 // Configure Google OAuth2 client
-const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);// Configure Facebook OAuth2 strategy with clientID and clientSecret
+const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
 passport.use(new FacebookTokenStrategy({
     clientID: process.env.FACEBOOK_APP_ID, // Provide clientID option
     clientSecret: process.env.FACEBOOK_APP_SECRET,
