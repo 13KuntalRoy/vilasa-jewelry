@@ -2,14 +2,14 @@
     "version": 2,
     "builds": [
       {
-        "src": "vilasa-backend/index.js",
+        "src": "index.js",
         "use": "@vercel/node"
       }
     ],
     "routes": [
       {
         "src": "/(.*)",
-        "dest": "vilasa-backend/index.js"
+        "dest": "index.js"
       }
     ]
   }
