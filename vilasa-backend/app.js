@@ -23,6 +23,8 @@ const invoice = require("./routes/invoiceRoute");
 const enquiry = require("./routes/enquiryRoute")
 const ErrorHandler = require('./utils/errorHandler');
 const subscriber = require('./routes/subscriberRouter');
+const contact = require('./routes/contactRoute')
+const teamProfile = require('./routes/teamprofileRoute')
 
 // Middleware setup
 app.use(cookieParser()); // Middleware for parsing cookies
@@ -46,6 +48,8 @@ app.use("/api/vilasa-v1/db-url/vilasa", dyurl);
 app.use("/api/vilasa-v1/order/report",invoice);
 app.use("/api/vilasa-v1/venquiry/f1",enquiry);
 app.use("/api/vilasa-v1/subscriberapi",subscriber);
+app.use("/api/vilasa-v1/contact/v1",contact);
+app.use("/api/vilasa-v1/teamProfile/v1",teamProfile);
 
 // Middleware to expose endpoint list only in development mode
 

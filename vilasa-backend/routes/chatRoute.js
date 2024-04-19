@@ -9,7 +9,7 @@ router.route('/chats')
 router.route('/enquiries/:enquiryId/chats')
   .get(isAuthenticatedUser, getEnquiryChatMessages);
 
-router.route('/chats/:chatId/mark-for-deletion')
-  .put(isAuthenticatedUser, markChatForDeletion);
+  router.route('/chats/:chatId/mark-deletion')
+  .put(isAuthenticatedUser,markChatForDeletion);
 
 module.exports = router;

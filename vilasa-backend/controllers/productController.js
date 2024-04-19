@@ -623,78 +623,101 @@ exports.createBrand = async (req, res, next) => {
     }
 
     // Upload picture to Cloudinary with folder specified
-    cloudinary.uploader.upload(req.file.path, { folder: 'Brand' }, async (error, result) => {
-      if (error) {
-        return next(new ErrorHandler('Error uploading picture to Cloudinary', 500));
-      }
+    const result = await cloudinary.uploader.upload(req.file.path, { folder: 'Brand' });
 
-      // Create brand with picture URL from Cloudinary
-      const brand = await Brand.create({ title, description, picture: result.secure_url });
+    // Create brand with picture URL from Cloudinary
+    const brand = await Brand.create({ title, description, picture: result.secure_url });
 
-      // Send success response
-      res.status(201).json({ success: true, brand });
-    });
+    // Send success response
+    res.status(201).json({ success: true, brand });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
 };
 
-// Get all brands
 exports.getAllBrands = async (req, res, next) => {
   try {
+    // Find all brands
     const brands = await Brand.find();
+
+    // Send response with the list of brands
     res.status(200).json({ success: true, brands });
   } catch (error) {
     next(new ErrorHandler(error.message, 500));
   }
 };
 
-
 exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
 
+    // Find the brand by ID
+    const brand = await Brand.findById(id);
+
     // Check if picture file is provided
     if (req.file) {
-      // Upload picture to Cloudinary with folder specified
-      cloudinary.uploader.upload(req.file.path, { folder: 'Brand' }, async (error, result) => {
-        if (error) {
-          return next(new ErrorHandler('Error uploading picture to Cloudinary', 500));
-        }
+      // Upload new picture to Cloudinary with folder specified
+      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'Brand' });
 
-        // Update brand with new picture URL from Cloudinary
-        const updatedBrand = await Brand.findByIdAndUpdate(id, { title, description, picture: result.secure_url }, { new: true });
+      // If brand has an old picture, delete it from Cloudinary
+      if (brand.picture && brand.picture.public_id) {
+        await cloudinary.uploader.destroy(brand.picture.public_id);
+      }
 
-        // Send response with updated brand
-        res.status(200).json({ success: true, brand: updatedBrand });
-      });
-    } else {
-      // If no picture file provided, update brand without picture
-      const updatedBrand = await Brand.findByIdAndUpdate(id, { title, description }, { new: true });
+      // Update brand with new picture URL from Cloudinary
+      brand.title = title;
+      brand.description = description;
+      brand.picture = result.secure_url;
+      await brand.save();
 
       // Send response with updated brand
-      res.status(200).json({ success: true, brand: updatedBrand });
+      res.status(200).json({ success: true, brand });
+    } else {
+      // If no picture file provided, update brand without modifying the picture field
+      brand.title = title;
+      brand.description = description;
+      await brand.save();
+
+      // Send response with updated brand
+      res.status(200).json({ success: true, brand });
     }
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
 };
+exports.getAllBrands = async (req, res, next) => {
+  try {
+    // Find all brands
+    const brands = await Brand.find();
 
-// Delete a brand by ID
+    // Send response with the list of brands
+    res.status(200).json({ success: true, brands });
+  } catch (error) {
+    next(new ErrorHandler(error.message, 500));
+  }
+};
+
 exports.deleteBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const deletedBrand = await Brand.findByIdAndDelete(id);
-    if (!deletedBrand) {
-      return res.status(404).json({ success: false, message: 'Brand not found' });
+
+    // Find the brand by ID
+    const brand = await Brand.findById(id);
+
+    // If brand has a picture, delete it from Cloudinary
+    if (brand.picture && brand.picture.public_id) {
+      await cloudinary.uploader.destroy(brand.picture.public_id);
     }
+
+    // Delete the brand from the database
+    await Brand.findByIdAndDelete(id);
+
     res.status(200).json({ success: true, message: 'Brand deleted successfully' });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
 };
-
 // Category Controller
 
 exports.createCategory = async (req, res, next) => {
@@ -709,7 +732,7 @@ exports.createCategory = async (req, res, next) => {
       });
       
       // Create category with image URL
-      category = await Category.create({ title, image: result.secure_url });
+      category = await Category.create({ title, image: { public_id: result.public_id, url: result.secure_url } });
     } else {
       // If no image provided, create category without image
       category = await Category.create({ title });
@@ -727,23 +750,36 @@ exports.updateCategory = async (req, res, next) => {
     const { title, image } = req.body;
     let updatedCategory;
 
+    // Find the existing category
+    const existingCategory = await Category.findById(id);
+
+    if (!existingCategory) {
+      return res.status(404).json({ success: false, message: 'Category not found' });
+    }
+
+    // If a new image is provided
     if (image) {
       // Upload new image to Cloudinary
       const result = await cloudinary.uploader.upload(image, {
         folder: 'category_images' // Specify the folder in Cloudinary to store category images
       });
 
+      // If the existing category has an image, delete it from Cloudinary
+      if (existingCategory.image && existingCategory.image.public_id) {
+        await cloudinary.uploader.destroy(existingCategory.image.public_id);
+      }
+
       // Update category with new image URL
-      updatedCategory = await Category.findByIdAndUpdate(id, { title, image: result.secure_url }, { new: true });
+      updatedCategory = await Category.findByIdAndUpdate(
+        id,
+        { title, image: { public_id: result.public_id, url: result.secure_url } },
+        { new: true }
+      );
     } else {
       // If no new image provided, update category without changing the image
       updatedCategory = await Category.findByIdAndUpdate(id, { title }, { new: true });
     }
 
-    if (!updatedCategory) {
-      return res.status(404).json({ success: false, message: 'Category not found' });
-    }
-    
     res.status(200).json({ success: true, category: updatedCategory });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
@@ -769,20 +805,28 @@ exports.getAllCategories = async (req, res, next) => {
     next(new ErrorHandler(error.message, 500));
   }
 };
-// Delete a category by ID
+
 exports.deleteCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
+
+    // Find the category to be deleted
     const deletedCategory = await Category.findByIdAndDelete(id);
+
     if (!deletedCategory) {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
+
+    // If the deleted category had an image, delete it from Cloudinary
+    if (deletedCategory.image && deletedCategory.image.public_id) {
+      await cloudinary.uploader.destroy(deletedCategory.image.public_id);
+    }
+
     res.status(200).json({ success: true, message: 'Category deleted successfully' });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
-};
-
+}
 // Coupon Controller
 
 // Create a new coupon

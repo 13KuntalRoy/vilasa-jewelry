@@ -9,13 +9,12 @@ const sendEmail = require('../utils/sendEmail');
  * @route   POST /api/orders/new
  * @access  Private
  */
-
 exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     const { shippingInfo, orderItems, paymentInfo, totalPrice } = req.body;
 
-    // Validate input data (example validation, adjust as per your needs)
+    // Validate input data
     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
-        return next(new ErrorHandler("Invalid input data", 400));
+        return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
     }
 
     // Check payment status
@@ -40,22 +39,16 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         user: req.user._id,
     });
 
+    // Update product stock asynchronously for each order item
+    await Promise.all(order.orderItems.map(async (item) => {
+        await updateStock(item.product, item.quantity);
+    }));
+
     // Send email notification about the new order in parallel
     try {
-        const emailPromise = sendEmail({
-            email: req.user.email,
-            subject: 'New Order Confirmation',
-            message: `Dear ${req.user.name}, your order with ID ${order._id} has been successfully placed.`,
-        });
-
-        await Promise.all([emailPromise]);
+        await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
     } catch (error) {
-        // Handle email sending error here
-        // For example, you could log the error to a logging service like Winston or Sentry
-        // logger.error('Failed to send email notification:', error);
-        // Or integrate with Sentry:
-        // Sentry.captureException(error);
-        return next(new ErrorHandler("Failed to send email notification", 500));
+        return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
     }
 
     res.status(201).json({
@@ -64,7 +57,14 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     });
 });
 
-
+// Function to send order confirmation email
+async function sendOrderConfirmationEmail(email, orderId, userName) {
+    await sendEmail({
+        email: email,
+        subject: 'New Order Confirmation',
+        message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
+    });
+}
 /**
  * @desc    Get details of a single order
  * @route   GET /api/orders/:id
@@ -173,10 +173,7 @@ exports.updateOrder = asyncErrorHandler(async (req, res, next) => {
         // Check if status is being updated to "Shipped"
         if (req.body.status === "Shipped") {
             order.shippedAt = Date.now();
-            // Update product stock asynchronously for each order item
-            await Promise.all(order.orderItems.map(async (i) => {
-                await updateStock(i.product, i.quantity);
-            }));
+
         }
 
         // Update order status

@@ -2,8 +2,8 @@ const mongoose = require("mongoose");
 
 const dynamicImageSchema = new mongoose.Schema({
   imageUrl: {
-    type: String,
-    required: true,
+    public_id: String,
+    url: String,
   },
   group: {
     type: String,

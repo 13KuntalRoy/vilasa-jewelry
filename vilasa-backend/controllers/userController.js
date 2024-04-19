@@ -398,7 +398,6 @@ exports.resetPassword = asyncErrorHandler(async (req, res, next) => {
     });
 });
 
-// Update user profile
 exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
     try {
         // Find the user by ID
@@ -420,6 +419,13 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
 
         // Handle avatar upload if available
         if (req.file) {
+            // Check if the user has an existing avatar
+            if (user.avatar && user.avatar.public_id) {
+                // Delete the old avatar picture from Cloudinary
+                await cloudinary.v2.uploader.destroy(user.avatar.public_id);
+            }
+
+            // Upload the new avatar picture
             const avatarUpload = await cloudinary.v2.uploader.upload(req.file.path, {
                 folder: 'avatars',
                 width: 150,
@@ -445,6 +451,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         next(new ErrorHandler(500, 'An error occurred while updating user profile.'));
     }
 });
+
 // Admin operations
 
 // Get all users (Admin)

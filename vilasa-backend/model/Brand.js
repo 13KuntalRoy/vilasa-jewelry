@@ -23,9 +23,8 @@ const brandSchema = new mongoose.Schema({
     },
     // URL of the brand's picture/logo
     picture: {
-        type: String,
-        required: true,
-        // Explanation: URL of the brand's picture or logo. Must be provided.
+        public_id: { type: String},
+        url: { type: String}
     },
 }, {
     timestamps: true, // Automatically adds createdAt and updatedAt fields

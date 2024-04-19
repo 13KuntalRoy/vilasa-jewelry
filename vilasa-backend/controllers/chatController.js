@@ -56,21 +56,39 @@ const getEnquiryChatMessages = asyncHandler(async (req, res) => {
 
 
 
-// Mark chat message for deletion
+// Mark all chat messages with Sam's sender ID and a specific enquiry ID for deletion
 const markChatForDeletion = asyncHandler(async (req, res) => {
-    const { chatId } = req.params;
-    try {
-      // Find the chat message by ID and update its fields
-      const chat = await Chat.findByIdAndUpdate(chatId, { markedForDeletion: true, deletionDate: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000) }, { new: true });
-      if (!chat) {
-        return res.status(404).json({ message: 'Chat message not found.' });
-      }
-      res.status(200).json({ message: 'Chat message marked for deletion.' });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Internal server error.' });
+  const { enquiryId } = req.params;
+  try {
+    // Find all chat messages with the specified enquiry ID and sender "Sam"
+    const chatMessages = await Chat.find({ enquiry: enquiryId, sender: { $eq: 'Sam' } });
+    if (!chatMessages || chatMessages.length === 0) {
+      return res.status(404).json({ message: 'No chat messages found for Sam with the specified enquiry.' });
     }
-  });
+    
+    // Iterate over each chat message found
+    for (const chat of chatMessages) {
+      // If the chat message has a picture, delete it from Cloudinary
+      if (chat.picture) {
+        // Extract the image public ID from the Cloudinary URL
+        const publicId = chat.picture.split('/').pop().split('.')[0];
+        
+        // Delete the image from Cloudinary
+        await cloudinary.uploader.destroy(publicId);
+      }
+      
+      // Update the chat message to mark it for deletion
+      chat.markedForDeletion = true;
+      chat.deletionDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000);
+      await chat.save();
+    }
+
+    res.status(200).json({ message: 'All chat messages for Sam with the specified enquiry marked for deletion.' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error.' });
+  }
+});
 
 
 
