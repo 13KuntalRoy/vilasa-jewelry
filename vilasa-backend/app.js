@@ -25,6 +25,8 @@ const ErrorHandler = require('./utils/errorHandler');
 const subscriber = require('./routes/subscriberRouter');
 const contact = require('./routes/contactRoute')
 const teamProfile = require('./routes/teamprofileRoute')
+const cart = require('./routes/cartRoute')
+const wishlist = require('./routes/wishlistRoute')
 
 // Middleware setup
 app.use(cookieParser()); // Middleware for parsing cookies
@@ -50,6 +52,8 @@ app.use("/api/vilasa-v1/venquiry/f1",enquiry);
 app.use("/api/vilasa-v1/subscriberapi",subscriber);
 app.use("/api/vilasa-v1/contact/v1",contact);
 app.use("/api/vilasa-v1/teamProfile/v1",teamProfile);
+app.use("/api/vilasa-v1/cart/v1",cart);
+app.use("/api/vilasa-v1/wishlist/v1",wishlist);
 
 // Middleware to expose endpoint list only in development mode
 
@@ -64,10 +68,10 @@ if (environment === 'development') {
   });
 }
 // Serve static files from the frontend build directory
-const __dirname1 = path.resolve();
+// const __dirname1 = path.resolve();
 // app.use(express.static(path.join(__dirname1, "/frontend/build")));
 
-// Serve the React app for any other routes
+// //Serve the React app for any other routes
 // app.get("*", (req, res) =>
 //   res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
 // );
