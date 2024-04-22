@@ -1,11 +1,29 @@
 const mongoose = require('mongoose');
 
-/**
- * Order Schema
- * Represents an order placed by a user in the e-commerce system.
- * Vilasa confidential.
- * Author: Kuntal Roy
- */
+const returnSchema = new mongoose.Schema({
+  returnReason: {
+    type: String,
+    required: true,
+    // Explanation: Reason for returning the order. Required field.
+  },
+  returnStatus: {
+    type: String,
+    required: true,
+    default: 'Pending', // Default status set to Pending
+    // Explanation: Status of the return. Default value is Pending.
+    // Possible values: Pending, Approved, Rejected, Processed, etc.
+  },
+  returnRequestedAt: {
+    type: Date,
+    default: Date.now,
+    // Explanation: Date and time when the return was requested. Default value is current date/time.
+  },
+  returnProcessedAt: {
+    type: Date,
+    // Explanation: Date and time when the return was processed.
+  },
+});
+
 const orderSchema = new mongoose.Schema({
   // Order shipping address
   shippingInfo: {
@@ -166,6 +184,15 @@ const orderSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
     // Explanation: Date and time when the order was created. Default value is current date/time.
+  },
+
+  // Return information
+  returnInfo: returnSchema,
+
+  // Date when the return was initiated
+  returnInitiatedAt: {
+    type: Date,
+    // Explanation: Date and time when the return was initiated.
   },
 });
 

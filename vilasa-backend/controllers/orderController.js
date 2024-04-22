@@ -1,6 +1,7 @@
 const asyncErrorHandler = require('../middleware/asyncErrorHandler');
 const Order = require('../model/orderModel');
 const Product = require('../model/productModel');
+const { ErrorHandler } = require('../utils/errorHandler');
 
 const sendEmail = require('../utils/sendEmail');
 
@@ -41,7 +42,7 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
 
     // Update product stock asynchronously for each order item
     await Promise.all(order.orderItems.map(async (item) => {
-        await updateStock(item.product, item.quantity);
+        await updateStock(item.productId, item.quantity);
     }));
 
     // Send email notification about the new order in parallel
@@ -65,6 +66,67 @@ async function sendOrderConfirmationEmail(email, orderId, userName) {
         message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
     });
 }
+
+/**
+ * @desc    Initiate a return for an order
+ * @route   POST /api/orders/:id/return
+ * @access  Private
+ */
+exports.initiateReturn = asyncErrorHandler(async (req, res, next) => {
+    const { returnReason } = req.body;
+
+    // Validate input data
+    if (!returnReason) {
+        return next(new ErrorHandler("Return reason is required", 422)); // 422 for Unprocessable Entity
+    }
+
+    const order = await Order.findById(req.params.id);
+
+    // Check if the order exists
+    if (!order) {
+        return next(new ErrorHandler("Order not found", 404));
+    }
+
+    // Check if the order is associated with the logged-in user
+    if (order.user.toString() !== req.user._id.toString()) {
+        return next(new ErrorHandler("Unauthorized to initiate return for this order", 401));
+    }
+
+    // Check if the order has already been delivered
+    if (order.orderStatus !== "Delivered") {
+        return next(new ErrorHandler("Cannot initiate return for undelivered order", 400));
+    }
+
+    // Check if a return has already been initiated for this order
+    if (order.returnInfo) {
+        return next(new ErrorHandler("Return already initiated for this order", 400));
+    }
+
+    // Create return information
+    order.returnInfo = {
+        returnReason,
+        returnStatus: "Pending",
+        returnRequestedAt: Date.now()
+    };
+
+    await order.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Return initiated successfully",
+        order,
+    });
+});
+
+// Function to send return confirmation email
+async function sendReturnConfirmationEmail(email, orderId, userName) {
+    await sendEmail({
+        email: email,
+        subject: 'Return Initiated Confirmation',
+        message: `Dear ${userName}, your return request for order with ID ${orderId} has been successfully initiated.`,
+    });
+}
+
 /**
  * @desc    Get details of a single order
  * @route   GET /api/orders/:id
@@ -91,7 +153,6 @@ exports.getSingleOrderDetails = asyncErrorHandler(async (req, res, next) => {
     }
 });
 
-
 /**
  * @desc    Get logged in user's orders
  * @route   GET /api/orders/myorders
@@ -117,7 +178,6 @@ exports.myOrders = asyncErrorHandler(async (req, res, next) => {
         next(new ErrorHandler(error.message, 500));
     }
 });
-
 
 /**
  * @desc    Get all orders (Admin)
@@ -152,7 +212,6 @@ exports.getAllOrders = asyncErrorHandler(async (req, res, next) => {
     }
 });
 
-
 /**
  * @desc    Update order status (Admin)
  * @route   PUT /api/orders/admin/update/:id
@@ -173,7 +232,6 @@ exports.updateOrder = asyncErrorHandler(async (req, res, next) => {
         // Check if status is being updated to "Shipped"
         if (req.body.status === "Shipped") {
             order.shippedAt = Date.now();
-
         }
 
         // Update order status
@@ -196,9 +254,6 @@ exports.updateOrder = asyncErrorHandler(async (req, res, next) => {
         next(new ErrorHandler(error.message, 500));
     }
 });
-
-
-
 
 /**
  * @desc    Delete an order (Admin)
@@ -227,6 +282,7 @@ exports.deleteOrder = asyncErrorHandler(async (req, res, next) => {
         next(new ErrorHandler(error.message, 500));
     }
 });
+
 /**
  * @desc    Update stock for products in an order
  * @param   {String} id - Product ID
