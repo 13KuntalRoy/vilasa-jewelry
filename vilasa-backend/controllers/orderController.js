@@ -303,3 +303,96 @@ async function updateStock(id, quantity) {
         throw new ErrorHandler(`Failed to update stock: ${error.message}`, 500);
     }
 }
+/**
+ * @desc    Update return status for an order
+ * @route   PUT /api/orders/:id/return/update
+ * @access  Private/Admin
+ */
+exports.updateReturnStatus = asyncErrorHandler(async (req, res, next) => {
+    const { returnStatus, paymentStatus } = req.body;
+
+    // Validate input data
+    if (!returnStatus || !paymentStatus) {
+        return next(new ErrorHandler("Return status and payment status are required", 422)); // 422 for Unprocessable Entity
+    }
+
+    // Find the order by ID
+    const order = await Order.findById(req.params.id);
+
+    // Check if the order exists
+    if (!order) {
+        return next(new ErrorHandler("Order not found", 404));
+    }
+
+    // Update return status if the order has a return initiated
+    if (!order.returnInfo) {
+        return next(new ErrorHandler("No return initiated for this order", 400));
+    }
+
+    // Update return status
+    order.returnInfo.returnStatus = returnStatus;
+
+    // If return status is updated to "Approved" or "Rejected", update the order status accordingly
+    if (returnStatus === "Approved") {
+        order.orderStatus = "Return Approved";
+    } else if (returnStatus === "Rejected") {
+        order.orderStatus = "Return Rejected";
+    }
+
+    // Update payment status
+    order.paymentInfo.success = paymentStatus;
+
+    await order.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Return status and payment status updated successfully",
+        order,
+    });
+});
+
+/**
+ * @desc    Process return for an order
+ * @route   PUT /api/orders/:id/return/process
+ * @access  Private/Admin
+ */
+exports.processReturn = asyncErrorHandler(async (req, res, next) => {
+    const { returnStatus, paymentStatus } = req.body;
+
+    // Validate input data
+    if (!returnStatus || !paymentStatus) {
+        throw new ErrorHandler("Return status and payment status are required", 422); // 422 for Unprocessable Entity
+    }
+
+    // Find the order by ID
+    const order = await Order.findById(req.params.id);
+
+    // Check if the order exists
+    if (!order) {
+        throw new ErrorHandler("Order not found", 404);
+    }
+
+    // Check if a return has been initiated for this order
+    if (!order.returnInfo) {
+        throw new ErrorHandler("No return initiated for this order", 400);
+    }
+
+    // Update return status
+    order.returnInfo.returnStatus = returnStatus;
+
+    // If return status is updated to "Processed", update the order status accordingly
+    if (returnStatus === "Processed") {
+        order.orderStatus = "Return Processed";
+    }
+
+    // Update payment status
+    order.paymentInfo.success = paymentStatus;
+
+    await order.save();
+
+    res.status(200).json({
+        success: true,
+        message: "Return status and payment status updated successfully",
+        order,
+    });
+});
