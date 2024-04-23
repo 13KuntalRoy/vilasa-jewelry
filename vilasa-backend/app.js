@@ -34,7 +34,13 @@ app.use(express.json()); // Middleware for parsing JSON bodies
 app.use(bodyParser.json({ limit: "50mb" })); // Middleware for parsing JSON with a size limit
 app.use(bodyParser.urlencoded({ limit: "50mb", extended: true })); // Middleware for parsing URL-encoded data with a size limit
 app.use(fileUpload()); // Middleware for handling file uploads
-app.use(cors()); // Middleware for enabling CORS
+app.use(cors(
+  {
+    origin:["http://localhost:5173","https://vilasajewelry.netlify.app","http://localhost:3000"],
+    methods:["GET","POST","PUT","DELETE"]
+
+  }
+)); // Middleware for enabling CORS
 
 // Custom error handling middleware
 app.use(errorMiddleware);
