@@ -187,7 +187,7 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
         await newUser.save();
 
         // Send verification email to the new user
-        const verificationUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/verify-email/${verificationToken}`;
+        const verificationUrl = `${req.protocol}://${process.env.FRONTEND_URL}verify-email/confirm?token=${verificationToken}`;
         const message = `Please click on the following link to verify your email address: ${verificationUrl}`;
         await sendEmail({
             email: newUser.email,
