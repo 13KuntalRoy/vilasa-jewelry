@@ -75,7 +75,7 @@ passport.use(new FacebookTokenStrategy({
       done(error); // Pass any error to error handling middleware
     }
   }));
-  exports.googleAuth = asyncErrorHandler(async (req, res) => {
+exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
         const { googleToken } = req.body; // Rename 'token' to 'googleToken'
 
@@ -108,6 +108,7 @@ passport.use(new FacebookTokenStrategy({
                 name: payload.name,
                 email: payload.email,
                 googleId: payload.sub,
+                password: 'vilasa3456@1234',
                 role: 'user',
                 emailVerified: true,
             });
