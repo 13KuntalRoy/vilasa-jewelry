@@ -9,6 +9,7 @@ const sendJWtToken = require('../utils/JwtToken')
 const passport = require('passport'); // Import passport for authentication
 const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
+const { log } = require('console');
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
@@ -78,6 +79,9 @@ passport.use(new FacebookTokenStrategy({
 exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
         const { googleToken } = req.body; // Rename 'token' to 'googleToken'
+        console.log("test1");
+        console.log(req.body);
+        console.log("test2");
 
         if (!googleToken) {
             return res.status(400).json({ success: false, message: "Google token is missing" });
