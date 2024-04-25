@@ -96,7 +96,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
         }
 
         // Extract gender from Google profile
-        const gender = payload.gender || ''; // Default to empty string if not provided
+        const gender = payload.gender || 'unknown'; // Default to 'unknown' if not provided
 
         // Check if the required fields are provided
         if (!payload.email || !payload.name) {
@@ -111,16 +111,14 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
                 name: payload.name,
                 email: payload.email,
                 googleId: payload.sub,
-                gender: gender, // Set gender from Google profile
-                // You may need to set a default password if your schema requires it
-                password: "temporaryPassword", 
-                role: 'user', 
-                emailVerified: true, 
+                gender: gender,
+                role: 'user',
+                emailVerified: true,
             });
         }
 
         // Generate JWT token
-        const authToken = user.generateAuthToken(); 
+        const authToken = user.generateAuthToken();
 
         // Send JWT token to the client
         res.status(200).json({
