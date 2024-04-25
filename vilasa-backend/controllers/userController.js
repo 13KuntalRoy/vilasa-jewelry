@@ -94,8 +94,6 @@ passport.use(new FacebookTokenStrategy({
             return res.status(400).json({ success: false, message: "Invalid Google token" });
         }
 
-        // Extract gender from Google profile
-        const gender = payload.gender || ''; 
 
         // Check if the required fields are provided
         if (!payload.email || !payload.name) {
@@ -110,7 +108,6 @@ passport.use(new FacebookTokenStrategy({
                 name: payload.name,
                 email: payload.email,
                 googleId: payload.sub,
-                gender: gender,
                 role: 'user',
                 emailVerified: true,
             });
