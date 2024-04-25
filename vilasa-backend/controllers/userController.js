@@ -96,7 +96,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
         }
 
         // Extract gender from Google profile
-        const gender = payload.gender || 'unknown'; // Default to 'unknown' if not provided
+        const gender = payload.gender || ''; 
 
         // Check if the required fields are provided
         if (!payload.email || !payload.name) {
