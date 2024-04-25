@@ -77,53 +77,70 @@ passport.use(new FacebookTokenStrategy({
   }));
 // Google OAuth2 authentication endpoint
 exports.googleAuth = asyncErrorHandler(async (req, res) => {
-    const { token: googleToken } = req.body; // Rename 'token' to 'googleToken'
-  
-    // Verify Google ID token
-    const ticket = await googleClient.verifyIdToken({
-      idToken: googleToken,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-  
-    // Extract gender from Google profile
-    const gender = payload.gender || ''; // Default to empty string if not provided
+    try {
+        const { token: googleToken } = req.body; // Rename 'token' to 'googleToken'
 
-    // Upload Google profile picture to Cloudinary
-    const avatarUploadResult = await cloudinary.v2.uploader.upload(payload.picture, {
-        folder: 'avatars', // Specify folder in Cloudinary where avatars are stored
-    });
+        if (!googleToken) {
+            return res.status(400).json({ success: false, message: "Google token is missing" });
+        }
 
-    // Extract public ID and URL from Cloudinary upload result
-    const avatar = {
-        public_id: avatarUploadResult.public_id,
-        url: avatarUploadResult.secure_url,
-    };
+        // Verify Google ID token
+        const ticket = await googleClient.verifyIdToken({
+            idToken: googleToken,
+            audience: process.env.GOOGLE_CLIENT_ID,
+        });
+        const payload = ticket.getPayload();
 
-    // Check if user exists with Google ID
-    let user = await User.findOne({ googleId: payload.sub });
-    if (!user) {
-      // If user doesn't exist, create a new user with Google profile
-      user = await User.create({
-        name: payload.name,
-        email: payload.email,
-        googleId: payload.sub,
-        gender: gender, // Set gender from Google profile
-        avatar: avatar, // Set avatar details
-        role: 'user', // Set default role for new users
-        emailVerified: true, // You can set this based on your email verification process
-      });
+        if (!payload) {
+            return res.status(400).json({ success: false, message: "Invalid Google token" });
+        }
+
+        // Extract gender from Google profile
+        const gender = payload.gender || ''; // Default to empty string if not provided
+
+        // Upload Google profile picture to Cloudinary if available
+        let avatar = null;
+        if (payload.picture) {
+            const avatarUploadResult = await cloudinary.v2.uploader.upload(payload.picture, {
+                folder: 'avatars', // Specify folder in Cloudinary where avatars are stored
+            });
+
+            // Extract public ID and URL from Cloudinary upload result
+            avatar = {
+                public_id: avatarUploadResult.public_id,
+                url: avatarUploadResult.secure_url,
+            };
+        }
+
+        // Check if user exists with Google ID
+        let user = await User.findOne({ googleId: payload.sub });
+        if (!user) {
+            // If user doesn't exist, create a new user with Google profile
+            user = await User.create({
+                name: payload.name,
+                email: payload.email,
+                googleId: payload.sub,
+                gender: gender, // Set gender from Google profile
+                avatar: avatar, // Set avatar details
+                role: 'user', // Set default role for new users
+                emailVerified: true, // You can set this based on your email verification process
+            });
+        }
+
+        // Generate JWT token
+        const authToken = user.generateAuthToken(); // Rename 'token' to 'authToken'
+
+        // Send JWT token to the client
+        res.status(200).json({
+            success: true,
+            token: authToken, // Rename 'token' to 'authToken'
+        });
+    } catch (error) {
+        console.error("Google authentication failed:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
     }
-  
-    // Generate JWT token
-    const authToken = user.generateAuthToken(); // Rename 'token' to 'authToken'
-  
-    // Send JWT token to the client
-    res.status(200).json({
-      success: true,
-      token: authToken, // Rename 'token' to 'authToken'
-    });
 });
+
 // Facebook OAuth2 authentication endpoint
 exports.facebookAuth = asyncErrorHandler(async (req, res, next) => {
   passport.authenticate('facebook-token', (err, user, info) => {
