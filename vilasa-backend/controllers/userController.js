@@ -75,10 +75,9 @@ passport.use(new FacebookTokenStrategy({
       done(error); // Pass any error to error handling middleware
     }
   }));
-// Google OAuth2 authentication endpoint
-exports.googleAuth = asyncErrorHandler(async (req, res) => {
+  exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
-        const { token: googleToken } = req.body; // Rename 'token' to 'googleToken'
+        const { googleToken } = req.body; // Rename 'token' to 'googleToken'
 
         if (!googleToken) {
             return res.status(400).json({ success: false, message: "Google token is missing" });
@@ -100,7 +99,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
 
         // Check if the required fields are provided
         if (!payload.email || !payload.name) {
-            return res.status(400).json({ success: false, message: "Missing required fields" });
+            return res.status(400).json({ success: false, message: "Missing required fields in Google profile" });
         }
 
         // Check if user exists with Google ID
@@ -127,7 +126,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
         });
     } catch (error) {
         console.error("Google authentication failed:", error);
-        res.status(500).json({ success: false, message: "Internal server error" });
+        res.status(500).json({ success: false, message: "Internal server error occurred during Google authentication" });
     }
 });
 
