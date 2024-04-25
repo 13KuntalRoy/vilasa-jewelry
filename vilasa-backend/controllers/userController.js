@@ -98,18 +98,9 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
         // Extract gender from Google profile
         const gender = payload.gender || ''; // Default to empty string if not provided
 
-        // Upload Google profile picture to Cloudinary if available
-        let avatar = null;
-        if (payload.picture) {
-            const avatarUploadResult = await cloudinary.v2.uploader.upload(payload.picture, {
-                folder: 'avatars', // Specify folder in Cloudinary where avatars are stored
-            });
-
-            // Extract public ID and URL from Cloudinary upload result
-            avatar = {
-                public_id: avatarUploadResult.public_id,
-                url: avatarUploadResult.secure_url,
-            };
+        // Check if the required fields are provided
+        if (!payload.email || !payload.name) {
+            return res.status(400).json({ success: false, message: "Missing required fields" });
         }
 
         // Check if user exists with Google ID
@@ -121,19 +112,20 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
                 email: payload.email,
                 googleId: payload.sub,
                 gender: gender, // Set gender from Google profile
-                avatar: avatar, // Set avatar details
-                role: 'user', // Set default role for new users
-                emailVerified: true, // You can set this based on your email verification process
+                // You may need to set a default password if your schema requires it
+                password: "temporaryPassword", 
+                role: 'user', 
+                emailVerified: true, 
             });
         }
 
         // Generate JWT token
-        const authToken = user.generateAuthToken(); // Rename 'token' to 'authToken'
+        const authToken = user.generateAuthToken(); 
 
         // Send JWT token to the client
         res.status(200).json({
             success: true,
-            token: authToken, // Rename 'token' to 'authToken'
+            token: authToken,
         });
     } catch (error) {
         console.error("Google authentication failed:", error);
