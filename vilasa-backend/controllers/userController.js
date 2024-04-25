@@ -78,11 +78,8 @@ passport.use(new FacebookTokenStrategy({
   }));
 exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
-        const { googleToken } = req.body; // Rename 'token' to 'googleToken'
-        console.log("test1");
-        console.log(req.body);
-        console.log("test2");
-
+        const {  token: googleToken } = req.body; // Rename 'token' to 'googleToken'
+        
         if (!googleToken) {
             return res.status(400).json({ success: false, message: "Google token is missing" });
         }
