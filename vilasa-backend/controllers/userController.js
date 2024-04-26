@@ -294,7 +294,7 @@ exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
         await user.save();
         
         // Respond with success message
-        res.status(200).json({ success: true, message: 'Email verified successfully' });
+        return res.status(200).json({ success: true, message: 'Email verified successfully' });
     } catch (error) {
         next(new ErrorHandler(error.message, 500)); // Pass any error to error handling middleware with status code 500
     }
