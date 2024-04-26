@@ -283,7 +283,7 @@ exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
     if (user.emailVerified) {
         return res.status(400).json({ success: false, message: 'Email already verified' });
     }
-
+    else{
     // Mark email as verified
     user.emailVerified = true;
     user.verificationToken = undefined;
@@ -297,6 +297,7 @@ exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
         res.status(200).json({ success: true, message: 'Email verified successfully' });
     } catch (error) {
         next(new ErrorHandler(error.message, 500)); // Pass any error to error handling middleware with status code 500
+    }
     }
 });
 
