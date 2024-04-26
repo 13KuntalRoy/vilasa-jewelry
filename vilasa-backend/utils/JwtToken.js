@@ -23,6 +23,7 @@ const sendJWtToken = (user, statusCode, response) => {
             success: true,
             user,
             token,
+            refreshToken,
         });
 };
 
