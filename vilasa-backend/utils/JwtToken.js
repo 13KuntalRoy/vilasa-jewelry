@@ -1,3 +1,4 @@
+const jwt = require("jsonwebtoken");
 /**
  * Send JWT token to the client in a cookie and as a response
  * @param {Object} user - User data

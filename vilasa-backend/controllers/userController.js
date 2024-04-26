@@ -6,6 +6,7 @@ const sendEmail = require('../utils/sendEmail'); // Import send email utility
 const crypto = require('crypto'); // Import crypto module for generating hash
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
+const jwt = require("jsonwebtoken");
 // const passport = require('passport'); // Import passport for authentication
 // const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
