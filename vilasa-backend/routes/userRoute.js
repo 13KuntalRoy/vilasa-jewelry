@@ -15,7 +15,8 @@ const {
     deleteUserById,
     verifyEmail,
     googleAuth,
-    facebookAuth
+    facebookAuth,
+    refreshToken
 } = require('../controllers/userController');
 
 // Rate limit configuration
@@ -64,4 +65,7 @@ router.route('/google').post(googleAuth);
 
 // Facebook OAuth2 authentication route
 router.route('/facebook').post( facebookAuth);
+
+router.route('/refresh-token')
+    .post(refreshToken);
 module.exports = router;

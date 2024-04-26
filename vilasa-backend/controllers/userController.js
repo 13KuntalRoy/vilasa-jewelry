@@ -584,3 +584,36 @@ exports.deleteUserById = asyncErrorHandler(async (req, res, next) => {
         message: 'User deleted successfully',
     });
 });
+// Controller to refresh access token using refresh token
+exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
+    // Extract the refresh token from the request body or headers
+    const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
+
+    // Check if refresh token is provided
+    if (!refreshToken) {
+        return next(new ErrorHandler('Refresh token is missing', 400));
+    }
+
+    try {
+        // Verify the refresh token
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+
+        // Check if the refresh token belongs to a valid user
+        const user = await User.findById(decoded.id);
+        if (!user) {
+            return next(new ErrorHandler('Invalid refresh token', 401));
+        }
+
+        // Generate a new access token for the user
+        const accessToken = user.generateAuthToken();
+
+        // Send the new access token to the client
+        res.status(200).json({
+            success: true,
+            token: accessToken,
+        });
+    } catch (error) {
+        // Handle token verification or user lookup errors
+        return next(new ErrorHandler('Invalid refresh token', 401));
+    }
+});
