@@ -9,7 +9,6 @@ const sendJWtToken = require('../utils/JwtToken')
 const passport = require('passport'); // Import passport for authentication
 const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
-const { log } = require('console');
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
@@ -26,8 +25,8 @@ passport.use(new FacebookTokenStrategy({
           name: profile.displayName,
           email: profile.emails[0].value,
           facebookId: profile.id,
-          gender: profile.gender, // Set gender based on Facebook profile
           role: 'user', // Set default role for new users
+          passport:'vilasa@4567facebook',
           emailVerified: true, // You can set this based on your email verification process
         };
 
@@ -281,6 +280,10 @@ exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
         return next(new ErrorHandler('Invalid or expired verification token', 400)); // Handle invalid or expired token
     }
 
+    if (user.emailVerified) {
+        return res.status(400).json({ success: false, message: 'Email already verified' });
+    }
+
     // Mark email as verified
     user.emailVerified = true;
     user.verificationToken = undefined;
@@ -296,6 +299,7 @@ exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
         next(new ErrorHandler(error.message, 500)); // Pass any error to error handling middleware with status code 500
     }
 });
+
 // Login user
 exports.loginUser = asyncErrorHandler(async (req, res, next) => {
     const { email, password } = req.body;
