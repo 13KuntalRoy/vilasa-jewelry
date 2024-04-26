@@ -117,7 +117,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
 
         // // Generate JWT token
         // const authToken = user.generateAuthToken();
-        const { token, refreshToken } = user.generateTokens();
+        const { token, refreshToken } = user.generateTokens;
 
         // Send JWT token to the client
         res.status(200).json({
