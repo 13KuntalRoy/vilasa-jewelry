@@ -246,7 +246,8 @@ exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
         await newUser.save();
 
         // Send verification email to the new user
-        const verificationUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/verify-email/${verificationToken}`;
+        // const verificationUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/verify-email/${verificationToken}`;
+        const verificationUrl = `${process.env.FRONTEND_URL}verify-email/confirm?token=${verificationToken}`;
         const message = `Please click on the following link to verify your email address: ${verificationUrl}`;
         await sendEmail({
             email: newUser.email,
@@ -348,8 +349,8 @@ exports.forgotPassword = asyncErrorHandler(async (req, res, next) => {
     await user.save({ validateBeforeSave: false });
 
     // Create the reset URL
-    const resetUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/resetpassword/${resetToken}`;
-
+    // const resetUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/resetpassword/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/resetpassword/${resetToken}`;
     // Send the password reset email
     const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
 
