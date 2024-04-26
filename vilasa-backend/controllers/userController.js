@@ -114,17 +114,8 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
                 emailVerified: true,
             });
         }
-
-        // // Generate JWT token
-        // const authToken = user.generateAuthToken();
-        const { token, refreshToken } = user.generateTokens;
-
-        // Send JWT token to the client
-        res.status(200).json({
-            success: true,
-            token: token,
-            refreshToken :refreshToken
-        });
+        sendJWtToken(user, 200, res);
+        
     } catch (error) {
         console.error("Google authentication failed:", error);
         res.status(500).json({ success: false, message: "Internal server error occurred during Google authentication" });
