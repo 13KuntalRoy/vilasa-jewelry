@@ -111,7 +111,7 @@ userSchema.methods.generateAuthToken = function () {
     expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
   });
   const refreshToken = jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '30d', // Default to 30 days
+    expiresIn: '30d', // Default to 30 days
   })
 
   return { token, refreshToken }
