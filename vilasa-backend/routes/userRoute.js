@@ -15,7 +15,7 @@ const {
     deleteUserById,
     verifyEmail,
     googleAuth,
-    facebookAuth,
+    // facebookAuth,
     refreshToken
 } = require('../controllers/userController');
 
@@ -63,9 +63,9 @@ router.route('/users/:id')
 // Google OAuth2 authentication route
 router.route('/google').post(googleAuth);
 
-// Facebook OAuth2 authentication route
-router.route('/facebook').post( facebookAuth);
+// // Facebook OAuth2 authentication route
+// router.route('/facebook').post( facebookAuth);
 
-router.route('/refresh-token')
-    .post(refreshToken);
+router.route('/refresh-token').post(refreshToken);
+
 module.exports = router;

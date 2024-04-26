@@ -6,75 +6,81 @@ const sendEmail = require('../utils/sendEmail'); // Import send email utility
 const crypto = require('crypto'); // Import crypto module for generating hash
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
-const passport = require('passport'); // Import passport for authentication
-const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
+// const passport = require('passport'); // Import passport for authentication
+// const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
-passport.use(new FacebookTokenStrategy({
-    clientID: process.env.FACEBOOK_APP_ID, // Provide clientID option
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-  }, async (accessToken, refreshToken, profile, done) => {
-    try {
-      // Check if user exists with Facebook ID
-      let user = await User.findOne({ facebookId: profile.id });
-      if (!user) {
-        // If user doesn't exist, create a new user with Facebook profile
-        const newUser = {
-          name: profile.displayName,
-          email: profile.emails[0].value,
-          facebookId: profile.id,
-          role: 'user', // Set default role for new users
-          passport:'vilasa@4567facebook',
-          emailVerified: true, // You can set this based on your email verification process
-        };
 
-        if (profile.photos && profile.photos.length > 0) {
-          // Assuming the first photo in the profile photos array is the main profile picture
-          const photoUrl = profile.photos[0].value;
-          // Upload the avatar to Cloudinary
-          const avatarUpload = await cloudinary.v2.uploader.upload(photoUrl, {
-            folder: 'avatars',
-            width: 150,
-            crop: 'scale',
-          });
-          newUser.avatar = {
-            public_id: avatarUpload.public_id,
-            url: avatarUpload.secure_url,
-          };
-        }
+function generateTokens(user) {
+    const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.JWT_EXPIRE || '1d' });
+    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET);
+    return { token, refreshToken };
+  }
+// passport.use(new FacebookTokenStrategy({
+//     clientID: process.env.FACEBOOK_APP_ID, // Provide clientID option
+//     clientSecret: process.env.FACEBOOK_APP_SECRET,
+//   }, async (accessToken, refreshToken, profile, done) => {
+//     try {
+//       // Check if user exists with Facebook ID
+//       let user = await User.findOne({ facebookId: profile.id });
+//       if (!user) {
+//         // If user doesn't exist, create a new user with Facebook profile
+//         const newUser = {
+//           name: profile.displayName,
+//           email: profile.emails[0].value,
+//           facebookId: profile.id,
+//           role: 'user', // Set default role for new users
+//           passport:'vilasa@4567facebook',
+//           emailVerified: true, // You can set this based on your email verification process
+//         };
 
-        user = await User.create(newUser);
-      } else {
-        // If user already exists, update gender if available in Facebook profile
-        if (profile.gender) {
-          user.gender = profile.gender;
-        }
-        // Update avatar if available in Facebook profile
-        if (profile.photos && profile.photos.length > 0) {
-          // Assuming the first photo in the profile photos array is the main profile picture
-          const photoUrl = profile.photos[0].value;
-          // Upload the new avatar to Cloudinary
-          const avatarUpload = await cloudinary.v2.uploader.upload(photoUrl, {
-            folder: 'avatars',
-            width: 150,
-            crop: 'scale',
-          });
-          // Update user's avatar details
-          user.avatar = {
-            public_id: avatarUpload.public_id,
-            url: avatarUpload.secure_url,
-          };
-        }
-        // Save the user with the updated gender and avatar
-        await user.save();
-      }
-      done(null, user); // Pass user to the next middleware
-    } catch (error) {
-      done(error); // Pass any error to error handling middleware
-    }
-  }));
+//         if (profile.photos && profile.photos.length > 0) {
+//           // Assuming the first photo in the profile photos array is the main profile picture
+//           const photoUrl = profile.photos[0].value;
+//           // Upload the avatar to Cloudinary
+//           const avatarUpload = await cloudinary.v2.uploader.upload(photoUrl, {
+//             folder: 'avatars',
+//             width: 150,
+//             crop: 'scale',
+//           });
+//           newUser.avatar = {
+//             public_id: avatarUpload.public_id,
+//             url: avatarUpload.secure_url,
+//           };
+//         }
+
+//         user = await User.create(newUser);
+//       } else {
+//         // If user already exists, update gender if available in Facebook profile
+//         if (profile.gender) {
+//           user.gender = profile.gender;
+//         }
+//         // Update avatar if available in Facebook profile
+//         if (profile.photos && profile.photos.length > 0) {
+//           // Assuming the first photo in the profile photos array is the main profile picture
+//           const photoUrl = profile.photos[0].value;
+//           // Upload the new avatar to Cloudinary
+//           const avatarUpload = await cloudinary.v2.uploader.upload(photoUrl, {
+//             folder: 'avatars',
+//             width: 150,
+//             crop: 'scale',
+//           });
+//           // Update user's avatar details
+//           user.avatar = {
+//             public_id: avatarUpload.public_id,
+//             url: avatarUpload.secure_url,
+//           };
+//         }
+//         // Save the user with the updated gender and avatar
+//         await user.save();
+//       }
+//       done(null, user); // Pass user to the next middleware
+//     } catch (error) {
+//       done(error); // Pass any error to error handling middleware
+//     }
+//   }));
 exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
         const {  token: googleToken } = req.body; // Rename 'token' to 'googleToken'
@@ -114,13 +120,15 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
             });
         }
 
-        // Generate JWT token
-        const authToken = user.generateAuthToken();
+        // // Generate JWT token
+        // const authToken = user.generateAuthToken();
+        const { token, refreshToken } = generateTokens(user);
 
         // Send JWT token to the client
         res.status(200).json({
             success: true,
-            token: authToken,
+            token: token,
+            refreshToken :refreshToken
         });
     } catch (error) {
         console.error("Google authentication failed:", error);
@@ -129,25 +137,25 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
 });
 
 // Facebook OAuth2 authentication endpoint
-exports.facebookAuth = asyncErrorHandler(async (req, res, next) => {
-  passport.authenticate('facebook-token', (err, user, info) => {
-    if (err) {
-      return next(new ErrorHandler(err.message, 500));
-    }
-    if (!user) {
-      return next(new ErrorHandler('Unauthorized', 401));
-    }
+// exports.facebookAuth = asyncErrorHandler(async (req, res, next) => {
+//   passport.authenticate('facebook-token', (err, user, info) => {
+//     if (err) {
+//       return next(new ErrorHandler(err.message, 500));
+//     }
+//     if (!user) {
+//       return next(new ErrorHandler('Unauthorized', 401));
+//     }
 
-    // Generate JWT token
-    const token = user.generateAuthToken();
+//     // Generate JWT token
+//     const token = user.generateAuthToken();
 
-    // Send JWT token to the client
-    res.status(200).json({
-      success: true,
-      token,
-    });
-  })(req, res, next);
-});
+//     // Send JWT token to the client
+//     res.status(200).json({
+//       success: true,
+//       token,
+//     });
+//   })(req, res, next);
+// });
 
 
 // Register a new user
@@ -329,6 +337,7 @@ exports.logoutUser = asyncErrorHandler(async (req, res, next) => {
         expires: new Date(Date.now() + 10 * 1000), // Expire in 10 seconds
         httpOnly: true,
     });
+    res.clearCookie('refreshToken');
 
     // Send response
     res.status(200).json({
@@ -585,7 +594,7 @@ exports.deleteUserById = asyncErrorHandler(async (req, res, next) => {
     });
 });
 // Controller to refresh access token using refresh token
-exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
+exports.refreshToken = async (req, res, next) => {
     // Extract the refresh token from the request body or headers
     const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
 
@@ -599,21 +608,22 @@ exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
         // Check if the refresh token belongs to a valid user
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.userId);
         if (!user) {
             return next(new ErrorHandler('Invalid refresh token', 401));
         }
 
-        // Generate a new access token for the user
-        const accessToken = user.generateAuthToken();
+        // Generate new access and refresh tokens
+        const { token, newRefreshToken } = generateTokens(user);
 
         // Send the new access token to the client
         res.status(200).json({
             success: true,
-            token: accessToken,
+            token: token,
+            refreshToken: newRefreshToken
         });
     } catch (error) {
         // Handle token verification or user lookup errors
         return next(new ErrorHandler('Invalid refresh token', 401));
     }
-});
+};

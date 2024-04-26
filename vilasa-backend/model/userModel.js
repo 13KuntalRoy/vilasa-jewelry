@@ -106,13 +106,13 @@ userSchema.pre("save", async function (next) {
 });
 
 // Generate JWT token for authentication
-userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
-  });
+// userSchema.methods.generateAuthToken = function () {
+//   const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+//     expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
+//   });
 
-  return token;
-};
+//   return token;
+// };
 
 // Compare entered password with stored hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
@@ -141,7 +141,10 @@ userSchema.methods.getVerificationToken = function () {
   return verificationToken; // Return the unhashed token for sending in the email
 };
 
-
+// Add refresh token to user
+userSchema.methods.addRefreshToken = function (token) {
+  this.refreshTokens.push({ token });
+};
 // Define User model
 const User = mongoose.model("User", userSchema);
 
