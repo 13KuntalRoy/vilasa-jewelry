@@ -114,7 +114,7 @@ userSchema.methods.generateAuthToken = function () {
     expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '30d', // Default to 30 days
   })
 
-  { token, refreshToken }
+  return { token, refreshToken }
 };
 
 // Compare entered password with stored hashed password

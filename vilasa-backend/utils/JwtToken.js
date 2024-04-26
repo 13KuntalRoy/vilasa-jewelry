@@ -4,12 +4,10 @@
  * @param {number} statusCode - HTTP status code
  * @param {Object} response - Express response object
  * @author Kuntal Roy
- */
-
-
+ */ 
 const sendJWtToken = (user, statusCode, response) => {
     // Generate JWT token
-    const {token,refreshToken}= user.generateAuthToken();
+    const {token,refreshToken} = user.generateAuthToken();
 
     // Cookie options
     const options = {
