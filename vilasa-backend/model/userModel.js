@@ -106,13 +106,16 @@ userSchema.pre("save", async function (next) {
 });
 
 // Generate JWT token for authentication
-// userSchema.methods.generateAuthToken = function () {
-//   const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-//     expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
-//   });
+userSchema.methods.generateAuthToken = function () {
+  const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
+  });
+  const refreshToken = jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: process.env.REFRESH_TOKEN_EXPIRE || '30d', // Default to 30 days
+  })
 
-//   return token;
-// };
+  { token, refreshToken }
+};
 
 // Compare entered password with stored hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {

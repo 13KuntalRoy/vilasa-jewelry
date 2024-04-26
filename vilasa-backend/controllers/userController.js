@@ -6,7 +6,6 @@ const sendEmail = require('../utils/sendEmail'); // Import send email utility
 const crypto = require('crypto'); // Import crypto module for generating hash
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
-const jwt = require("jsonwebtoken");
 // const passport = require('passport'); // Import passport for authentication
 // const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
@@ -14,11 +13,6 @@ const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
 
-function generateTokens(user) {
-    const token = jwt.sign({ userId: user._id }, process.env.ACCESS_TOKEN_SECRET, { expiresIn: process.env.JWT_EXPIRE || '1d' });
-    const refreshToken = jwt.sign({ userId: user._id }, process.env.REFRESH_TOKEN_SECRET);
-    return { token, refreshToken };
-  }
 // passport.use(new FacebookTokenStrategy({
 //     clientID: process.env.FACEBOOK_APP_ID, // Provide clientID option
 //     clientSecret: process.env.FACEBOOK_APP_SECRET,
@@ -123,7 +117,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
 
         // // Generate JWT token
         // const authToken = user.generateAuthToken();
-        const { token, refreshToken } = generateTokens(user);
+        const { token, refreshToken } = user.generateTokens;
 
         // Send JWT token to the client
         res.status(200).json({
@@ -595,7 +589,7 @@ exports.deleteUserById = asyncErrorHandler(async (req, res, next) => {
     });
 });
 // Controller to refresh access token using refresh token
-exports.refreshToken = async (req, res, next) => {
+exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
     // Extract the refresh token from the request body or headers
     const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
 
@@ -609,22 +603,21 @@ exports.refreshToken = async (req, res, next) => {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
 
         // Check if the refresh token belongs to a valid user
-        const user = await User.findById(decoded.userId);
+        const user = await User.findById(decoded.id);
         if (!user) {
             return next(new ErrorHandler('Invalid refresh token', 401));
         }
 
-        // Generate new access and refresh tokens
-        const { token, newRefreshToken } = generateTokens(user);
+        // Generate a new access token for the user
+        const { token, refreshToken } = user.generateTokens;
 
         // Send the new access token to the client
         res.status(200).json({
             success: true,
             token: token,
-            refreshToken: newRefreshToken
         });
     } catch (error) {
         // Handle token verification or user lookup errors
         return next(new ErrorHandler('Invalid refresh token', 401));
     }
-};
+});
