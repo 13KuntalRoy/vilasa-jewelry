@@ -350,7 +350,7 @@ exports.forgotPassword = asyncErrorHandler(async (req, res, next) => {
 
     // Create the reset URL
     // const resetUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/resetpassword/${resetToken}`;
-    const resetUrl = `${process.env.FRONTEND_URL}resetpassword/${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}resetpassword/?token=${resetToken}`;
     // Send the password reset email
     const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
 
