@@ -41,7 +41,7 @@ router.route('/login')
     .post(loginUser); // Login user
 
 router.route('/logout')
-    .get(isAuthenticatedUser, logoutUser); // Logout user
+    .get(logoutUser); // Logout user
 
 router.route('/forgotpassword',limiter)
     .post(forgotPassword); // Forgot password - Send reset token
