@@ -11,7 +11,8 @@ const sendJWtToken = (user, statusCode, response) => {
 
     // Cookie options
     const options = {
-        expires: new Date(Date.now() + process.env.COOKIE_EXPIRE * 24 * 60 * 60 * 1000), // Cookie expiration time
+        expires: new Date(Date.now() + process.env.COOKIE_EXPIRE * 60000),
+        // 24 * 60 * 60 * 1000), // Cookie expiration time
         httpOnly: true, // Cookie is accessible only through HTTP(S) headers
     };
     
