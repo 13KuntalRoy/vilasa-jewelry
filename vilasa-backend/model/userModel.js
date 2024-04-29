@@ -1,3 +1,6 @@
+const mongoose = require('mongoose');
+const validator = require('validator');
+
 const userSchema = new mongoose.Schema(
   {
     // Unique identifier for the user
@@ -8,29 +11,29 @@ const userSchema = new mongoose.Schema(
     // User's name
     name: {
       type: String,
-      required: [true, "Please enter your name"],
+      required: [true, 'Please enter your name'],
       trim: true, // Remove leading and trailing spaces
-      maxLength: [30, "Name cannot exceed 30 characters"],
-      minLength: [4, "Name should have at least 4 characters"],
+      maxLength: [30, 'Name cannot exceed 30 characters'],
+      minLength: [4, 'Name should have at least 4 characters'],
     },
     // User's email
     email: {
       type: String,
-      required: [true, "Please enter your email"],
+      required: [true, 'Please enter your email'],
       unique: true,
       lowercase: true,
-      validate: [validator.isEmail, "Please enter a valid email"],
+      validate: [validator.isEmail, 'Please enter a valid email'],
     },
     // User's gender
     gender: {
       type: String,
-      enum: ["male", "female", "other"],
+      enum: ['male', 'female', 'other'],
     },
     // User's password
     password: {
       type: String,
-      required: [true, "Please enter your password"],
-      minLength: [8, "Password should have at least 8 characters"],
+      required: [true, 'Please enter your password'],
+      minLength: [8, 'Password should have at least 8 characters'],
       select: false, // Hide password by default
     },
     // User's avatar
@@ -41,8 +44,8 @@ const userSchema = new mongoose.Schema(
     // User's role (user or admin)
     role: {
       type: String,
-      enum: ["user", "admin"],
-      default: "user",
+      enum: ['user', 'admin'],
+      default: 'user',
     },
     emailVerified: {
       type: Boolean,
@@ -88,3 +91,5 @@ const userSchema = new mongoose.Schema(
     },
   }
 );
+
+module.exports = mongoose.model('User', userSchema);
