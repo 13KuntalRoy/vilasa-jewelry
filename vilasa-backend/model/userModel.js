@@ -4,19 +4,28 @@ const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
+/**
+ * Artificial Jewelry User Schema
+ * Represents artificial jewelry users in the e-commerce system.
+ * Author: Kuntal Roy
+ * Vilasa confidential
+ */
 const userSchema = new mongoose.Schema(
   {
+    // Unique identifier for the user
     _id: {
       type: mongoose.Schema.Types.ObjectId,
       auto: true
     },
+    // User's name
     name: {
       type: String,
       required: [true, "Please enter your name"],
-      trim: true,
+      trim: true, // Remove leading and trailing spaces
       maxLength: [30, "Name cannot exceed 30 characters"],
       minLength: [4, "Name should have at least 4 characters"],
     },
+    // User's email
     email: {
       type: String,
       required: [true, "Please enter your email"],
@@ -24,30 +33,24 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       validate: [validator.isEmail, "Please enter a valid email"],
     },
-    phone: {
-      type: String,
-      required: [false,"Please enter your phone number"],
-      unique: true,
-      validate: {
-        validator: function(v) {
-          return validator.isMobilePhone(v, "any", { strictMode: false });
-        },
-        message: "Please enter a valid phone number",
-      },
-    },
+    // User's gender
     gender: {
       type: String,
       enum: ["male", "female", "other"],
     },
+    // User's password
     password: {
       type: String,
+      required: [true, "Please enter your password"],
       minLength: [8, "Password should have at least 8 characters"],
-      select: false,
+      select: false, // Hide password by default
     },
+    // User's avatar
     avatar: {
       public_id: String,
       url: String,
     },
+    // User's role (user or admin)
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -57,34 +60,39 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    phone:{
+      type: String,
+      unique: true
+    },
     verificationToken: String,
     verificationTokenExpires: Date,
+    // Token for resetting password
     resetPasswordToken: String,
+    // Expiry date for password reset token
     resetPasswordExpire: Date,
     facebookId: String,
     googleId: String,
   },
   {
-    timestamps: true,
+    timestamps: true, // Add createdAt and updatedAt fields automatically
     toJSON: {
-      virtuals: true,
+      virtuals: true, // Include virtual fields in the output
       transform: (doc, ret) => {
-        delete ret.password;
+        delete ret.password; // Do not include password in the output
         delete ret.resetPasswordToken;
         delete ret.resetPasswordExpire;
       },
     },
     toObject: {
-      virtuals: true,
+      virtuals: true, // Include virtual fields in the output
       transform: (doc, ret) => {
-        delete ret.password;
+        delete ret.password; // Do not include password in the output
         delete ret.resetPasswordToken;
         delete ret.resetPasswordExpire;
       },
     },
   }
 );
-
 
 // Hash password before saving to database
 userSchema.pre("save", async function (next) {
@@ -104,10 +112,10 @@ userSchema.pre("save", async function (next) {
 // Generate JWT token for authentication
 userSchema.methods.generateAuthToken = function () {
   const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1d',
+    expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
   });
   const refreshToken = jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: '30d',
+    expiresIn: '30d', // Default to 30 days
   })
 
   return { token, refreshToken }
@@ -140,7 +148,10 @@ userSchema.methods.getVerificationToken = function () {
   return verificationToken; // Return the unhashed token for sending in the email
 };
 
-
+// Add refresh token to user
+userSchema.methods.addRefreshToken = function (token) {
+  this.refreshTokens.push({ token });
+};
 // Define User model
 const User = mongoose.model("User", userSchema);
 
