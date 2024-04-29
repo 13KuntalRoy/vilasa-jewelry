@@ -17,7 +17,7 @@ const ErrorHandler = require("../utils/errorHandler");
  */
 exports.isAuthenticatedUser = asyncWrapper(async (req, res, next) => {
   // Extract token from request cookies
-  const { token } = req.cookies;
+  const { token } = req.cookies.token;
 
   // Check if token exists
   if (!token) {
