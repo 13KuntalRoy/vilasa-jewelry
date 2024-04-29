@@ -17,7 +17,7 @@ const ErrorHandler = require("../utils/errorHandler");
  */
 exports.isAuthenticatedUser = asyncWrapper(async (req, res, next) => {
   // Extract token from request cookies
-  const { token } = req.cookies.token;
+  const token = req.cookies.token;
 
   // Check if token exists
   if (!token) {
@@ -62,7 +62,10 @@ exports.authorizeRoles = (...roles) => {
     if (!roles.includes(req.user.role)) {
       // If user's role is not authorized, return authorization error
       return next(
-        new ErrorHandler(`Role: ${req.user.role} is not allowed to access this resource`, 403)
+        new ErrorHandler(
+          `Role: ${req.user.role} is not allowed to access this resource`,
+          403
+        )
       );
     }
 
