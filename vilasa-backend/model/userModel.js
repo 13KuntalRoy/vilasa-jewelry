@@ -33,6 +33,17 @@ const userSchema = new mongoose.Schema(
       lowercase: true,
       validate: [validator.isEmail, "Please enter a valid email"],
     },
+    phone: {
+      type: String,
+      validate: {
+        validator: function(v) {
+          return validator.isMobilePhone(v, 'any', { strictMode: false });
+        },
+        message: props => `${props.value} is not a valid phone number!`
+      },
+      default: ''  // or any other default value you prefer
+    },
+    
     // User's gender
     gender: {
       type: String,

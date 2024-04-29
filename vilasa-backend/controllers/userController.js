@@ -4,6 +4,7 @@ const asyncErrorHandler = require('../middleware/asyncErrorHandler'); // Import 
 const ErrorHandler = require('../utils/errorHandler'); // Import custom error handler
 const sendEmail = require('../utils/sendEmail'); // Import send email utility
 const crypto = require('crypto'); // Import crypto module for generating hash
+const bcrypt = require("bcryptjs");
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
 // const passport = require('passport'); // Import passport for authentication
@@ -404,40 +405,27 @@ exports.resetPassword = asyncErrorHandler(async (req, res, next) => {
     });
 });
 
+// Update user profile
 exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
     try {
         // Find the user by ID
         const user = await User.findById(req.user.id);
         if (!user) {
-            return next(new ErrorHandler(404, 'User not found.'));
+            return res.status(404).json({ success: false, message: 'User not found.' });
         }
 
         // Ensure user is authorized to update their own profile
         if (req.user.id !== user._id.toString()) {
-            return next(new ErrorHandler(403, 'Unauthorized to update this profile.'));
+            return res.status(403).json({ success: false, message: 'Unauthorized to update this profile.' });
         }
 
         // Extract fields to update from the request body
-        const { name, email, password } = req.body;
+        const { name, email, gender, phone, password } = req.body;
         const fieldsToUpdate = {};
-
-        // Update name if provided
-        if (name) {
-            // Validate name length
-            if (name.length < 4 || name.length > 30) {
-                return next(new ErrorHandler(400, 'Name should have between 4 and 30 characters.'));
-            }
-            fieldsToUpdate.name = name;
-        }
-
-        // Update email if provided
-        if (email) {
-            // Validate email format
-            if (!validator.isEmail(email)) {
-                return next(new ErrorHandler(400, 'Please provide a valid email address.'));
-            }
-            fieldsToUpdate.email = email;
-        }
+        if (name) fieldsToUpdate.name = name;
+        if (email) fieldsToUpdate.email = email;
+        if (gender) fieldsToUpdate.gender = gender;
+        if (phone) fieldsToUpdate.phone = phone;
 
         // Handle avatar upload if available
         if (req.file) {
@@ -459,13 +447,9 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
             };
         }
 
-        // Handle password update if provided
+        // Handle password update
         if (password) {
-            // Validate password length
-            if (password.length < 8) {
-                return next(new ErrorHandler(400, 'Password should have at least 8 characters.'));
-            }
-            // Generate a new salt and hash the password
+            // Generate a new salt only if the password has changed
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
             fieldsToUpdate.password = hashedPassword;
@@ -477,14 +461,16 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
             runValidators: true,
         });
 
-        // Send JWT token in response upon successful update
+        // Send success response with updated user data
         sendJWtToken(updatedUser, 200, res);
     } catch (error) {
         // Handle any errors
         console.error(error);
-        next(new ErrorHandler(500, 'An error occurred while updating user profile.'));
+        return res.status(500).json({ success: false, message: 'An error occurred while updating user profile.' });
     }
 });
+
+
 
 
 // Admin operations
