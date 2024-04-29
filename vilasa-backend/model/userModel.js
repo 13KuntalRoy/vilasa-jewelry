@@ -1,15 +1,3 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const crypto = require("crypto");
-
-/**
- * Artificial Jewelry User Schema
- * Represents artificial jewelry users in the e-commerce system.
- * Author: Kuntal Roy
- * Vilasa confidential
- */
 const userSchema = new mongoose.Schema(
   {
     // Unique identifier for the user
@@ -66,6 +54,17 @@ const userSchema = new mongoose.Schema(
     resetPasswordToken: String,
     // Expiry date for password reset token
     resetPasswordExpire: Date,
+    // User's phone number
+    phone: {
+      type: String,
+      validate: {
+        validator: function(v) {
+          // Custom validation for phone number format
+          return /\d{3}-\d{3}-\d{4}/.test(v); // Example format: 123-456-7890
+        },
+        message: props => `${props.value} is not a valid phone number! Please use the format 123-456-7890.`,
+      },
+    },
     facebookId: String,
     googleId: String,
   },
@@ -89,66 +88,3 @@ const userSchema = new mongoose.Schema(
     },
   }
 );
-
-// Hash password before saving to database
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
-    return next();
-  }
-
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    return next(error);
-  }
-});
-
-// Generate JWT token for authentication
-userSchema.methods.generateAuthToken = function () {
-  const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
-  });
-  const refreshToken = jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: '30d', // Default to 30 days
-  })
-
-  return { token, refreshToken }
-};
-
-// Compare entered password with stored hashed password
-userSchema.methods.matchPassword = async function (enteredPassword) {
-  return await bcrypt.compare(enteredPassword, this.password);
-};
-
-// Generate and hash password reset token
-userSchema.methods.getResetPasswordToken = function () {
-  const resetToken = crypto.randomBytes(20).toString("hex");
-
-  this.resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-
-  this.resetPasswordExpire = Date.now() + (process.env.RESET_PASSWORD_EXPIRE || 15 * 60 * 1000); // Default to 15 minutes
-
-  return resetToken;
-};
-
-// Generate and hash password reset token
-userSchema.methods.getVerificationToken = function () {
-  const verificationToken = crypto.randomBytes(20).toString("hex");
-  this.verificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
-  this.verificationTokenExpires = Date.now() + (process.env.VERIFICATION_TOKEN_EXPIRE || 24 * 3600 * 1000); // Default to 24 hours
-  return verificationToken; // Return the unhashed token for sending in the email
-};
-
-// Add refresh token to user
-userSchema.methods.addRefreshToken = function (token) {
-  this.refreshTokens.push({ token });
-};
-// Define User model
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
