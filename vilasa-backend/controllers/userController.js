@@ -487,10 +487,6 @@ exports.getAllUsers = asyncErrorHandler(async (req, res, next) => {
 // Get single user by ID (Admin)
 exports.getUserById = asyncErrorHandler(async (req, res, next) => {
     try {
-        // Ensure the user is authorized as an admin
-        if (req.user.role !== 'admin') {
-            return next(new ErrorHandler(403, 'Unauthorized to access this resource.'));
-        }
 
         // Find user by ID
         const user = await User.findById(req.params.id);
@@ -511,10 +507,6 @@ exports.getUserById = asyncErrorHandler(async (req, res, next) => {
 
 exports.updateUserById = asyncErrorHandler(async (req, res, next) => {
     try {
-        // Ensure the user is authorized as an admin
-        if (req.user.role !== 'admin') {
-            return next(new ErrorHandler(403, 'Unauthorized to access this resource.'));
-        }
 
         // Find user by ID
         const user = await User.findById(req.params.id);
