@@ -69,7 +69,7 @@ exports.isAuthenticatedUser = asyncWrapper(async (req, res, next) => {
 
     // If user doesn't exist, return authentication error
     if (!user) {
-      return next(new ErrorHandler("Invalid token. Please login again.", 401));
+      return next(new ErrorHandler("Invalid token user doesn't exist. Please login again.", 401));
     }
 
     // Store user information in request object for further use
