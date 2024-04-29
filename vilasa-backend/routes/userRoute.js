@@ -57,9 +57,9 @@ router.route('/users')
     .get(isAuthenticatedUser, authorizeRoles('admin'), getAllUsers); // Get all users (Admin)
 
 router.route('/users/:id')
-    .get(isAuthenticatedUser, authorizeRoles('admin'), getUserById) // Get single user by ID (Admin)
-    .put(isAuthenticatedUser, authorizeRoles('admin'), updateUserById) // Update user details by ID (Admin)
-    .delete(isAuthenticatedUser, authorizeRoles('admin'), deleteUserById); // Delete user by ID (Admin)
+    .get(isAuthenticatedUser,  getUserById) // Get single user by ID (Admin)
+    .put(isAuthenticatedUser,  updateUserById) // Update user details by ID (Admin)
+    .delete(isAuthenticatedUser, deleteUserById); // Delete user by ID (Admin)
 // Google OAuth2 authentication route
 router.route('/google').post(googleAuth);
 
