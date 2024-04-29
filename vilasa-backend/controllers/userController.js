@@ -420,8 +420,24 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         // Extract fields to update from the request body
         const { name, email, password } = req.body;
         const fieldsToUpdate = {};
-        if (name) fieldsToUpdate.name = name;
-        if (email) fieldsToUpdate.email = email;
+
+        // Update name if provided
+        if (name) {
+            // Validate name length
+            if (name.length < 4 || name.length > 30) {
+                return next(new ErrorHandler(400, 'Name should have between 4 and 30 characters.'));
+            }
+            fieldsToUpdate.name = name;
+        }
+
+        // Update email if provided
+        if (email) {
+            // Validate email format
+            if (!validator.isEmail(email)) {
+                return next(new ErrorHandler(400, 'Please provide a valid email address.'));
+            }
+            fieldsToUpdate.email = email;
+        }
 
         // Handle avatar upload if available
         if (req.file) {
@@ -443,9 +459,13 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
             };
         }
 
-        // Handle password update
+        // Handle password update if provided
         if (password) {
-            // Generate a new salt only if the password has changed
+            // Validate password length
+            if (password.length < 8) {
+                return next(new ErrorHandler(400, 'Password should have at least 8 characters.'));
+            }
+            // Generate a new salt and hash the password
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
             fieldsToUpdate.password = hashedPassword;
