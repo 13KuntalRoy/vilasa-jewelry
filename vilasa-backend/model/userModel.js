@@ -84,7 +84,7 @@ const userSchema = new mongoose.Schema(
     },
   }
 );
-
+// Hash password before saving to database
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
     return next();
@@ -99,21 +99,21 @@ userSchema.pre("save", async function (next) {
   }
 });
 
+// Generate JWT token for authentication
 userSchema.methods.generateAuthToken = function () {
   const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1d',
+    expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
   });
-  const refreshToken = jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
-    expiresIn: '30d',
-  })
 
-  return { token, refreshToken }
+  return token;
 };
 
+// Compare entered password with stored hashed password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Generate and hash password reset token
 userSchema.methods.getResetPasswordToken = function () {
   const resetToken = crypto.randomBytes(20).toString("hex");
 
@@ -122,18 +122,21 @@ userSchema.methods.getResetPasswordToken = function () {
     .update(resetToken)
     .digest("hex");
 
-  this.resetPasswordExpire = Date.now() + (process.env.RESET_PASSWORD_EXPIRE || 15 * 60 * 1000);
+  this.resetPasswordExpire = Date.now() + (process.env.RESET_PASSWORD_EXPIRE || 15 * 60 * 1000); // Default to 15 minutes
 
   return resetToken;
 };
 
+// Generate and hash password reset token
 userSchema.methods.getVerificationToken = function () {
   const verificationToken = crypto.randomBytes(20).toString("hex");
   this.verificationToken = crypto.createHash("sha256").update(verificationToken).digest("hex");
-  this.verificationTokenExpires = Date.now() + (process.env.VERIFICATION_TOKEN_EXPIRE || 24 * 3600 * 1000);
-  return verificationToken;
+  this.verificationTokenExpires = Date.now() + (process.env.VERIFICATION_TOKEN_EXPIRE || 24 * 3600 * 1000); // Default to 24 hours
+  return verificationToken; // Return the unhashed token for sending in the email
 };
 
+
+// Define User model
 const User = mongoose.model("User", userSchema);
 
 module.exports = User;
