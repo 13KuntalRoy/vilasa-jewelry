@@ -84,6 +84,8 @@ const userSchema = new mongoose.Schema(
     },
   }
 );
+
+
 // Hash password before saving to database
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) {
@@ -102,10 +104,13 @@ userSchema.pre("save", async function (next) {
 // Generate JWT token for authentication
 userSchema.methods.generateAuthToken = function () {
   const token = jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
-    expiresIn: process.env.JWT_EXPIRE || '1d', // Default to 1 day
+    expiresIn: process.env.JWT_EXPIRE || '1d',
   });
+  const refreshToken = jwt.sign({ id: this._id }, process.env.REFRESH_TOKEN_SECRET, {
+    expiresIn: '30d',
+  })
 
-  return token;
+  return { token, refreshToken }
 };
 
 // Compare entered password with stored hashed password
