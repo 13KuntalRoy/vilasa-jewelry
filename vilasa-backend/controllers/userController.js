@@ -418,7 +418,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         }
 
         // Extract fields to update from the request body
-        const { name, email } = req.body;
+        const { name, email, password } = req.body;
         const fieldsToUpdate = {};
         if (name) fieldsToUpdate.name = name;
         if (email) fieldsToUpdate.email = email;
@@ -443,6 +443,13 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
             };
         }
 
+        // Handle password update
+        if (password) {
+            const salt = await bcrypt.genSalt(10);
+            const hashedPassword = await bcrypt.hash(password, salt);
+            fieldsToUpdate.password = hashedPassword;
+        }
+
         // Update user profile
         const updatedUser = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
             new: true,
@@ -457,6 +464,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         next(new ErrorHandler(500, 'An error occurred while updating user profile.'));
     }
 });
+
 
 // Admin operations
 
