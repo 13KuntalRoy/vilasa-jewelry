@@ -60,10 +60,6 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    phone:{
-      type: String,
-      unique: true
-    },
     verificationToken: String,
     verificationTokenExpires: Date,
     // Token for resetting password
