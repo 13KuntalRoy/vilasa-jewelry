@@ -413,7 +413,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         }
 
         // Ensure user is authorized to update their own profile
-        if (req.user.id !== user.id) {
+        if (req.user.id !== user._id.toString()) {
             return next(new ErrorHandler(403, 'Unauthorized to update this profile.'));
         }
 
@@ -445,6 +445,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
 
         // Handle password update
         if (password) {
+            // Generate a new salt only if the password has changed
             const salt = await bcrypt.genSalt(10);
             const hashedPassword = await bcrypt.hash(password, salt);
             fieldsToUpdate.password = hashedPassword;
