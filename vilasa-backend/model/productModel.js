@@ -104,6 +104,11 @@ const productSchema = new mongoose.Schema({
     default: 1,
     // Explanation: Available stock quantity of the product. Default value is 1.
   },
+  Sold: {
+    type: Number,
+    default: 0,
+    // Explanation: Number of pieces sold for this product. Default value is 0.
+  },
 
   // Product warranty
   warranty: {

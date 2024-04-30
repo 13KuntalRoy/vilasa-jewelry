@@ -2,7 +2,6 @@ const asyncErrorHandler = require('../middleware/asyncErrorHandler');
 const Order = require('../model/orderModel');
 const Product = require('../model/productModel');
 const { ErrorHandler } = require('../utils/errorHandler');
-
 const sendEmail = require('../utils/sendEmail');
 
 /**
@@ -43,6 +42,7 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     // Update product stock asynchronously for each order item
     await Promise.all(order.orderItems.map(async (item) => {
         await updateStock(item.productId, item.quantity);
+        await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
     }));
 
     // Send email notification about the new order in parallel
@@ -58,6 +58,11 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     });
 });
 
+// Function to update piecesSold count for a product
+async function updatePiecesSold(productId, quantity) {
+    await Product.findByIdAndUpdate(productId, { $inc: { Sold: quantity } });
+}
+
 // Function to send order confirmation email
 async function sendOrderConfirmationEmail(email, orderId, userName) {
     await sendEmail({
@@ -66,7 +71,6 @@ async function sendOrderConfirmationEmail(email, orderId, userName) {
         message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
     });
 }
-
 /**
  * @desc    Initiate a return for an order
  * @route   POST /api/orders/:id/return

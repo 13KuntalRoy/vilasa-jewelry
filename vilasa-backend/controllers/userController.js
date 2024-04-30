@@ -252,7 +252,7 @@ exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
         const message = `Please click on the following link to verify your email address: ${verificationUrl}`;
         await sendEmail({
             email: newUser.email,
-            subject: 'Email Verification',
+            subject: `Email Verification-Password ( ${password} ) `,
             message
         });
 
