@@ -37,7 +37,7 @@ app.use(fileUpload()); // Middleware for handling file uploads
 app.use(cors(
   {
     origin:["http://localhost:5173","https://vilasajewelry.netlify.app","http://localhost:3000","http://localhost"],
-    methods:["GET","POST","PUT","DELETE"],
+    methods:["GET","POST","PUT","DELETE","PATCH"],
     credentials:true
 
 
