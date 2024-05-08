@@ -1,7 +1,7 @@
 // Import necessary models or services
-const Order = require('../models/Order');
-const Product = require('../models/Product');
-const User = require('../models/User');
+const Order = require('../model/orderModel');
+const Product = require('../model/productModel');
+const User = require('../model/userModel');
 
 // Controller function to get total sales amount
 exports.getTotalSalesAmount = async () => {
