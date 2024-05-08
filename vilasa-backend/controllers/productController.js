@@ -623,7 +623,7 @@ exports.createBrand = async (req, res, next) => {
     }
 
     // Upload picture to Cloudinary with folder specified
-    const result = await cloudinary.uploader.upload(req.file.path, { folder: 'Brand' });
+    const result = await cloudinary.uploader.upload(Brand, { folder: 'Brand' });
 
     // Create brand with picture URL from Cloudinary
     const brand = await Brand.create({ title, description, picture: result.secure_url });
@@ -658,7 +658,7 @@ exports.updateBrand = async (req, res, next) => {
     // Check if picture file is provided
     if (req.file) {
       // Upload new picture to Cloudinary with folder specified
-      const result = await cloudinary.uploader.upload(req.file.path, { folder: 'Brand' });
+      const result = await cloudinary.uploader.upload(Brand, { folder: 'Brand' });
 
       // If brand has an old picture, delete it from Cloudinary
       if (brand.picture && brand.picture.public_id) {

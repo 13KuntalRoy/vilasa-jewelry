@@ -436,7 +436,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
             }
 
             // Upload the new avatar picture
-            const avatarUpload = await cloudinary.v2.uploader.upload(req.file.path, {
+            const avatarUpload = await cloudinary.v2.uploader.upload(avatar, {
                 folder: 'avatars',
                 width: 150,
                 crop: 'scale',
