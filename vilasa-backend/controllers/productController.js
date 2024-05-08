@@ -613,20 +613,21 @@ exports.getProductCountByCategory = asyncErrorHandler(async (req, res, next) => 
 
 // Brand Controller
 
+// Function to create a brand
 exports.createBrand = async (req, res, next) => {
   try {
-    const { title, description } = req.body;
+    const { title, description,picture } = req.body;
 
     // Check if picture file is provided
-    if (!req.file) {
+    if (!picture) {
       return next(new ErrorHandler('No picture file provided', 400));
     }
 
-    // Upload picture to Cloudinary with folder specified
-    const result = await cloudinary.uploader.upload( picture, { folder: 'Brand' });
+    // Upload picture to Cloudinary
+    const result = await cloudinary.uploader.upload(picture, { folder: 'Brand' });
 
     // Create brand with picture URL from Cloudinary
-    const brand = await Brand.create({ title, description, picture: result.secure_url });
+    const brand = await Brand.create({ title, description, picture: { public_id: result.public_id, url: result.secure_url } });
 
     // Send success response
     res.status(201).json({ success: true, brand });
@@ -650,13 +651,13 @@ exports.getAllBrands = async (req, res, next) => {
 exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description } = req.body;
+    const { title, description,picture } = req.body;
 
     // Find the brand by ID
     const brand = await Brand.findById(id);
 
     // Check if picture file is provided
-    if (req.file) {
+    if (picture) {
       // Upload new picture to Cloudinary with folder specified
       const result = await cloudinary.uploader.upload(picture, { folder: 'Brand' });
 
