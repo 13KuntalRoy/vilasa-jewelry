@@ -600,9 +600,10 @@ exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
     try {
         // Verify the refresh token
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
-
+        console.log("decoded.id",decoded.id);
         // Check if the refresh token belongs to a valid user
         const user = await User.findById(decoded.id);
+        console.log(user);
         if (!user) {
             return next(new ErrorHandler('Invalid refresh token', 401));
         }
