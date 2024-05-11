@@ -590,7 +590,8 @@ exports.deleteUserById = asyncErrorHandler(async (req, res, next) => {
 // Controller to refresh access token using refresh token
 exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
     // Extract the refresh token from the request body or headers
-    const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
+    // const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
+    const refreshToken = req.body.refreshToken;
 
     // Check if refresh token is provided
     if (!refreshToken) {
