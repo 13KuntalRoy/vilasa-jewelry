@@ -603,7 +603,7 @@ exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
         const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
         console.log("decoded.id",decoded.id);
         // Check if the refresh token belongs to a valid user
-        const user = await User.findById(decoded.id);
+        const user = await User.findById(decoded.id).select("-password");
         console.log(user);
         if (!user) {
             return next(new ErrorHandler('Invalid refresh token', 401));
