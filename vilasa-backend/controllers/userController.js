@@ -7,9 +7,11 @@ const crypto = require('crypto'); // Import crypto module for generating hash
 const bcrypt = require("bcryptjs");
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
+const jwt = require("jsonwebtoken");
 // const passport = require('passport'); // Import passport for authentication
 // const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
+const { log } = require('console');
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
@@ -591,32 +593,31 @@ exports.deleteUserById = asyncErrorHandler(async (req, res, next) => {
 exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
     // Extract the refresh token from the request body or headers
     // const refreshToken = req.body.refreshToken || req.headers['x-refresh-token'];
-    const refreshToken = req.body.refreshToken;
-
+    const refreshTokenFromBody = req.body.refreshToken;
+    console.log(refreshTokenFromBody);
     // Check if refresh token is provided
-    if (!refreshToken) {
+    if (!refreshTokenFromBody) {
         return next(new ErrorHandler('Refresh token is missing', 400));
     }
 
     try {
+        console.log("hello");
         // Verify the refresh token
-        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        console.log(refreshTokenFromBody);
+        console.log("kkk");
+        const decoded = jwt.verify(refreshTokenFromBody, process.env.REFRESH_TOKEN_SECRET);
         console.log("decoded.id",decoded.id);
         // Check if the refresh token belongs to a valid user
-        const user = await User.findById(decoded.id).select("-password");
+        const user = await User.findById(decoded.id);
         console.log(user);
         if (!user) {
             return next(new ErrorHandler('Invalid refresh token', 401));
         }
-
-        // Generate a new access token for the user
-        const { token, refreshToken } = user.generateTokens();
-
+        console.log("check1");
+        sendJWtToken(user, 200, res)
+        console.log("check2");
         // Send the new access token to the client
-        res.status(200).json({
-            success: true,
-            token: token,
-        });
+
     } catch (error) {
         // Handle token verification or user lookup errors
         return next(new ErrorHandler('Invalid refresh token', 401));
