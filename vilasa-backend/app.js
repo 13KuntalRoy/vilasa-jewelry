@@ -32,8 +32,12 @@ const cal = require('./routes/calRoute')
 // Middleware setup
 app.use(cookieParser()); // Middleware for parsing cookies
 app.use(express.json()); // Middleware for parsing JSON bodies
-app.use(bodyParser.json({ limit: "50mb" })); // Middleware for parsing JSON with a size limit
-app.use(bodyParser.urlencoded({ limit: "50mb", extended: true })); // Middleware for parsing URL-encoded data with a size limit
+// app.use(bodyParser.json({ limit: "50mb" })); // Middleware for parsing JSON with a size limit
+// app.use(bodyParser.urlencoded({ limit: "50mb", extended: true })); // Middleware for parsing URL-encoded data with a size limit
+app.use(bodyParser.json({limit:1024*1024*10, type:'application/json'})); 
+app.use(bodyParser.urlencoded({ extended:true,limit:1024*1024*10,type:'application/x-www-form-urlencoded' }));
+
+
 app.use(fileUpload()); // Middleware for handling file uploads
 app.use(cors(
   {
