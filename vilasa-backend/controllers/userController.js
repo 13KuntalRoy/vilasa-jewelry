@@ -8,77 +8,11 @@ const bcrypt = require("bcryptjs");
 const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
 const jwt = require("jsonwebtoken");
-// const passport = require('passport'); // Import passport for authentication
-// const FacebookTokenStrategy = require('passport-facebook-token'); // Import Facebook OAuth2 strategy
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
-const { log } = require('console');
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
 
-// passport.use(new FacebookTokenStrategy({
-//     clientID: process.env.FACEBOOK_APP_ID, // Provide clientID option
-//     clientSecret: process.env.FACEBOOK_APP_SECRET,
-//   }, async (accessToken, refreshToken, profile, done) => {
-//     try {
-//       // Check if user exists with Facebook ID
-//       let user = await User.findOne({ facebookId: profile.id });
-//       if (!user) {
-//         // If user doesn't exist, create a new user with Facebook profile
-//         const newUser = {
-//           name: profile.displayName,
-//           email: profile.emails[0].value,
-//           facebookId: profile.id,
-//           role: 'user', // Set default role for new users
-//           passport:'vilasa@4567facebook',
-//           emailVerified: true, // You can set this based on your email verification process
-//         };
-
-//         if (profile.photos && profile.photos.length > 0) {
-//           // Assuming the first photo in the profile photos array is the main profile picture
-//           const photoUrl = profile.photos[0].value;
-//           // Upload the avatar to Cloudinary
-//           const avatarUpload = await cloudinary.v2.uploader.upload(photoUrl, {
-//             folder: 'avatars',
-//             width: 150,
-//             crop: 'scale',
-//           });
-//           newUser.avatar = {
-//             public_id: avatarUpload.public_id,
-//             url: avatarUpload.secure_url,
-//           };
-//         }
-
-//         user = await User.create(newUser);
-//       } else {
-//         // If user already exists, update gender if available in Facebook profile
-//         if (profile.gender) {
-//           user.gender = profile.gender;
-//         }
-//         // Update avatar if available in Facebook profile
-//         if (profile.photos && profile.photos.length > 0) {
-//           // Assuming the first photo in the profile photos array is the main profile picture
-//           const photoUrl = profile.photos[0].value;
-//           // Upload the new avatar to Cloudinary
-//           const avatarUpload = await cloudinary.v2.uploader.upload(photoUrl, {
-//             folder: 'avatars',
-//             width: 150,
-//             crop: 'scale',
-//           });
-//           // Update user's avatar details
-//           user.avatar = {
-//             public_id: avatarUpload.public_id,
-//             url: avatarUpload.secure_url,
-//           };
-//         }
-//         // Save the user with the updated gender and avatar
-//         await user.save();
-//       }
-//       done(null, user); // Pass user to the next middleware
-//     } catch (error) {
-//       done(error); // Pass any error to error handling middleware
-//     }
-//   }));
 exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
         const {  token: googleToken } = req.body; // Rename 'token' to 'googleToken'
@@ -125,31 +59,11 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
     }
 });
 
-// Facebook OAuth2 authentication endpoint
-// exports.facebookAuth = asyncErrorHandler(async (req, res, next) => {
-//   passport.authenticate('facebook-token', (err, user, info) => {
-//     if (err) {
-//       return next(new ErrorHandler(err.message, 500));
-//     }
-//     if (!user) {
-//       return next(new ErrorHandler('Unauthorized', 401));
-//     }
-
-//     // Generate JWT token
-//     const token = user.generateAuthToken();
-
-//     // Send JWT token to the client
-//     res.status(200).json({
-//       success: true,
-//       token,
-//     });
-//   })(req, res, next);
-// });
-
-
 // Register a new user
 exports.registerUser = asyncErrorHandler(async (req, res, next) => {
-    const { name, email, password, gender, avatar } = req.body;
+    const { name, email, password, gender} = req.body;
+    // Upload avatar to Cloudinary
+    const avatar = req.files.avatar;
 
     try {
         // Check if the email is already registered
@@ -159,7 +73,7 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
         }
 
         // Upload avatar to Cloudinary asynchronously
-        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar, {
+        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar.tempfilePath, {
             folder: 'avatars',
             width: 150,
             crop: 'scale',
@@ -209,7 +123,10 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
 
 // Register a new user
 exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
-    const { name, email, password, gender, avatar,role } = req.body;
+    const { name, email, password, gender,role } = req.body;
+    // Upload avatar to Cloudinary
+    const avatar = req.files.avatar;
+
 
     try {
         // Check if the email is already registered
@@ -219,7 +136,7 @@ exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
         }
 
         // Upload avatar to Cloudinary asynchronously
-        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar, {
+        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar.tempfilePath, {
             folder: 'avatars',
             width: 150,
             crop: 'scale',
@@ -350,7 +267,6 @@ exports.forgotPassword = asyncErrorHandler(async (req, res, next) => {
     // Generate and hash the reset token
     const resetToken = user.getResetPasswordToken();
     await user.save({ validateBeforeSave: false });
-
     // Create the reset URL
     // const resetUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/resetpassword/${resetToken}`;
     const resetUrl = `${process.env.FRONTEND_URL}resetpassword?token=${resetToken}`;
@@ -423,6 +339,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
 
         // Extract fields to update from the request body
         const { name, email, gender, phone, password } = req.body;
+        const avatar = req.files.avatar
         const fieldsToUpdate = {};
         if (name) fieldsToUpdate.name = name;
         if (email) fieldsToUpdate.email = email;
@@ -430,7 +347,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         if (phone) fieldsToUpdate.phone = phone;
 
         // Handle avatar upload if available
-        if (req.file) {
+        if (req.files) {
             // Check if the user has an existing avatar
             if (user.avatar && user.avatar.public_id) {
                 // Delete the old avatar picture from Cloudinary
@@ -438,7 +355,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
             }
 
             // Upload the new avatar picture
-            const avatarUpload = await cloudinary.v2.uploader.upload(avatar, {
+            const avatarUpload = await cloudinary.v2.uploader.upload(avatar.tempfilePath, {
                 folder: 'avatars',
                 width: 150,
                 crop: 'scale',
@@ -601,21 +518,13 @@ exports.refreshToken = asyncErrorHandler(async (req, res, next) => {
     }
 
     try {
-        console.log("hello");
-        // Verify the refresh token
-        console.log(refreshTokenFromBody);
-        console.log("kkk");
         const decoded = jwt.verify(refreshTokenFromBody, process.env.REFRESH_TOKEN_SECRET);
-        console.log("decoded.id",decoded.id);
         // Check if the refresh token belongs to a valid user
         const user = await User.findById(decoded.id);
-        console.log(user);
         if (!user) {
             return next(new ErrorHandler('Invalid refresh token', 401));
         }
-        console.log("check1");
         sendJWtToken(user, 200, res)
-        console.log("check2");
         // Send the new access token to the client
 
     } catch (error) {

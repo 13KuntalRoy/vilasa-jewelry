@@ -84,15 +84,7 @@ if (environment === 'development') {
     res.json(endpoints);
   });
 }
-// Serve static files from the frontend build directory
-// const __dirname1 = path.resolve();
-// app.use(express.static(path.join(__dirname1, "/frontend/build")));
-
-// //Serve the React app for any other routes
-// app.get("*", (req, res) =>
-//   res.sendFile(path.resolve(__dirname1, "frontend", "build", "index.html"))
-// );
-// Error handling middleware
+// Middleware to handle errors
 app.use((err, req, res, next) => {
   // Check if the error is an instance of our custom ErrorHandler
   if (err instanceof ErrorHandler) {
