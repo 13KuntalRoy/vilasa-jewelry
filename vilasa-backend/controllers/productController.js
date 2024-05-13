@@ -32,7 +32,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         const chunk = images.slice(i, i + 3);
         const uploadPromises = chunk.map(async (img) => {
           try {
-            const result = await cloudinary.uploader.upload(img, { folder: 'Products' });
+            const result = await cloudinary..v2.uploader.upload(img, { folder: 'Products' });
             imageLinks.push({ public_id: result.public_id, url: result.secure_url });
           } catch (error) {
             console.error('Failed to upload image to Cloudinary:', error.message);
@@ -624,7 +624,7 @@ exports.createBrand = async (req, res, next) => {
     }
 
     // Upload picture to Cloudinary
-    const result = await cloudinary.uploader.upload(picture, { folder: 'Brand' });
+    const result = await cloudinary.v2.uploader.upload(picture, { folder: 'Brand' });
 
     // Create brand with picture URL from Cloudinary
     const brand = await Brand.create({ title, description, picture: { public_id: result.public_id, url: result.secure_url } });
@@ -659,11 +659,11 @@ exports.updateBrand = async (req, res, next) => {
     // Check if picture file is provided
     if (picture) {
       // Upload new picture to Cloudinary with folder specified
-      const result = await cloudinary.uploader.upload(picture, { folder: 'Brand' });
+      const result = await cloudinary.v2.uploader.upload(picture, { folder: 'Brand' });
 
       // If brand has an old picture, delete it from Cloudinary
       if (brand.picture && brand.picture.public_id) {
-        await cloudinary.uploader.destroy(brand.picture.public_id);
+        await cloudinary.v2.uploader.destroy(brand.picture.public_id);
       }
 
       // Update brand with new picture URL from Cloudinary
@@ -708,7 +708,7 @@ exports.deleteBrand = async (req, res, next) => {
 
     // If brand has a picture, delete it from Cloudinary
     if (brand.picture && brand.picture.public_id) {
-      await cloudinary.uploader.destroy(brand.picture.public_id);
+      await cloudinary.v2.uploader.destroy(brand.picture.public_id);
     }
 
     // Delete the brand from the database
@@ -728,7 +728,7 @@ exports.createCategory = async (req, res, next) => {
 
     if (image) {
       // Upload image to Cloudinary
-      const result = await cloudinary.uploader.upload(image, {
+      const result = await cloudinary.v2.uploader.upload(image, {
         folder: 'category_images' // Specify the folder in Cloudinary to store category images
       });
       
@@ -761,13 +761,13 @@ exports.updateCategory = async (req, res, next) => {
     // If a new image is provided
     if (image) {
       // Upload new image to Cloudinary
-      const result = await cloudinary.uploader.upload(image, {
+      const result = await cloudinary.v2.uploader.upload(image, {
         folder: 'category_images' // Specify the folder in Cloudinary to store category images
       });
 
       // If the existing category has an image, delete it from Cloudinary
       if (existingCategory.image && existingCategory.image.public_id) {
-        await cloudinary.uploader.destroy(existingCategory.image.public_id);
+        await cloudinary.v2.uploader.destroy(existingCategory.image.public_id);
       }
 
       // Update category with new image URL
@@ -820,7 +820,7 @@ exports.deleteCategory = async (req, res, next) => {
 
     // If the deleted category had an image, delete it from Cloudinary
     if (deletedCategory.image && deletedCategory.image.public_id) {
-      await cloudinary.uploader.destroy(deletedCategory.image.public_id);
+      await cloudinary.v2.uploader.destroy(deletedCategory.image.public_id);
     }
 
     res.status(200).json({ success: true, message: 'Category deleted successfully' });
