@@ -736,7 +736,7 @@ exports.createCategory = async (req, res, next) => {
       });
       
       // Create category with image URL
-      category = await Category.create({ title, image: { public_id: result.public_id, url: result.secure_url } });
+      category = await Category.create({ title, imageUrl: { public_id: result.public_id, url: result.secure_url } });
     } else {
       // If no image provided, create category without image
       category = await Category.create({ title });
