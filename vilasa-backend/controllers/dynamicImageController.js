@@ -7,17 +7,15 @@ const cloudinary = require("cloudinary").v2;
 exports.uploadDynamicImage = async (req, res, next) => {
   try {
     // Check if files were uploaded
-    if (!req.files || Object.keys(req.files).length === 0) {
+    if (!req.body.image) {
       return res.status(400).json({ success: false, message: "No files were uploaded." });
     }
-
-    const file = req.files.file; // Get the file from request
 
     // Specify the folder where you want to upload the image in Cloudinary
     const folder = 'dynamic-images'; // Change this to your desired folder name
 
     // Upload image to Cloudinary with specified folder
-    const result = await cloudinary.uploader.upload(file.tempFilePath, { folder });
+    const result = await cloudinary.uploader.upload(req.body.image, { folder });
 
     // Save image URL and group to the database
     const dynamicImage = await DynamicImage.create({
@@ -90,14 +88,14 @@ exports.updateDynamicImage = async (req, res, next) => {
     }
 
     // Check if there is a file to upload
-    if (req.files && req.files.file) {
-      const file = req.files.file;
+    if (req.body.image) {
+      const file = req.body.image;
 
       // Delete existing image from Cloudinary
       await cloudinary.uploader.destroy(dynamicImage.imageUrl.public_id);
 
       // Upload new image to Cloudinary with a specified folder
-      const result = await cloudinary.uploader.upload(file.tempFilePath, { folder: 'dynamic-images' });
+      const result = await cloudinary.uploader.upload(file, { folder: 'dynamic-images' });
 
       // Update database record with new image URL and public_id
       dynamicImage.imageUrl = {
