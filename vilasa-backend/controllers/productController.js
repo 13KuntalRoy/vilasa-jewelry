@@ -32,7 +32,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         const chunk = images.slice(i, i + 3);
         const uploadPromises = chunk.map(async (img) => {
           try {
-            const result = await cloudinary..v2.uploader.upload(img, { folder: 'Products' });
+            const result = await cloudinary.v2.uploader.upload(img, { folder: 'Products' });
             imageLinks.push({ public_id: result.public_id, url: result.secure_url });
           } catch (error) {
             console.error('Failed to upload image to Cloudinary:', error.message);
