@@ -31,7 +31,7 @@ const sendEmail = async ({ email, subject, message }) => {
       from: process.env.SMTP_MAIL,
       to: email,
       subject,
-      text: message,
+      html: message,
     };
 
     // Send the email

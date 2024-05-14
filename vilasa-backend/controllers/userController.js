@@ -15,8 +15,8 @@ const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.
 
 exports.googleAuth = asyncErrorHandler(async (req, res) => {
     try {
-        const {  token: googleToken } = req.body; // Rename 'token' to 'googleToken'
-        
+        const { token: googleToken } = req.body; // Rename 'token' to 'googleToken'
+
         if (!googleToken) {
             return res.status(400).json({ success: false, message: "Google token is missing" });
         }
@@ -52,7 +52,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
             });
         }
         sendJWtToken(user, 200, res);
-        
+
     } catch (error) {
         console.error("Google authentication failed:", error);
         res.status(500).json({ success: false, message: "Internal server error occurred during Google authentication" });
@@ -61,7 +61,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
 
 // Register a new user
 exports.registerUser = asyncErrorHandler(async (req, res, next) => {
-    const { name, email, password, gender} = req.body;
+    const { name, email, password, gender } = req.body;
     // Upload avatar to Cloudinary
     console.log(req);
     const avatar = req.files.avatar;
@@ -104,7 +104,118 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
 
         // Send verification email to the new user
         const verificationUrl = `${process.env.FRONTEND_URL}verify-email/confirm?token=${verificationToken}`;
-        const message = `Please click on the following link to verify your email address: ${verificationUrl}`;
+        const message = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background-color: #f4f4f4;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              max-width: 600px;
+              margin: 20px auto;
+              padding: 20px;
+              background-color: #ffffff;
+              border-radius: 10px;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              animation: fadeIn 0.6s ease-in-out;
+            }
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+            h1 {
+              color: #333333;
+              text-align: center;
+              font-size: 28px;
+              margin-bottom: 20px;
+              font-family: 'Segoe Script', cursive;
+            }
+            p {
+              color: #666666;
+              line-height: 1.6;
+              margin-bottom: 15px;
+              font-size: 16px;
+            }
+            .button {
+              display: inline-block;
+              background-color: #ffcc00;
+              color: #333333;
+              text-decoration: none;
+              padding: 12px 24px;
+              margin-top: 20px;
+              transition: background-color 0.3s ease-in-out;
+              animation: pulse 1.5s infinite alternate;
+              border-radius: 5px;
+              font-size: 18px;
+            }
+            .button:hover {
+              background-color: #ffdb4d;
+            }
+            @keyframes pulse {
+              from {
+                transform: scale(1);
+              }
+              to {
+                transform: scale(1.1);
+              }
+            }
+            .logo {
+              display: block;
+              margin: 0 auto;
+              width: 150px;
+              height: auto;
+              animation: fadeInLogo 1s ease-out;
+            }
+            @keyframes fadeInLogo {
+              from {
+                opacity: 0;
+                transform: translateY(-20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              color: #999999;
+              font-size: 14px;
+            }
+            .footer a {
+              color: #007bff;
+              text-decoration: none;
+            }
+          </style>
+        </head>
+        <body>
+        <div class="container">
+          <img src="https://image.pngaaa.com/581/811581-small.png" alt="Company Logo" class="logo">
+          <h1>Email Verification</h1>
+          <p>Hello ${name},</p>
+          <p>Welcome to our jewelry site! Thank you for signing up.</p>
+          <p>To verify your email address and activate your account, please click the button below:</p>
+          <a href="${verificationUrl}" class="button">Verify Email</a>
+          <p>If you did not sign up for our platform, please disregard this email.</p>
+          <p>Best Regards,</p>
+          <p>The Jewelry Team</p>
+        </div>
+        <div class="footer">
+          <p>Need help? <a href="mailto:support@example.com">Contact Us</a></p>
+        </div>
+        </body>
+        </html>`;
         await sendEmail({
             email: newUser.email,
             subject: 'Email Verification',
@@ -124,7 +235,7 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
 
 // Register a new user
 exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
-    const { name, email, password, gender,role } = req.body;
+    const { name, email, password, gender, role } = req.body;
     // Upload avatar to Cloudinary
     console.log(req);
     const avatar = req.files.avatar;
@@ -170,7 +281,119 @@ exports.registerAdmin = asyncErrorHandler(async (req, res, next) => {
         // Send verification email to the new user
         // const verificationUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/verify-email/${verificationToken}`;
         const verificationUrl = `${process.env.FRONTEND_URL}verify-email/confirm?token=${verificationToken}`;
-        const message = `Please click on the following link to verify your email address: ${verificationUrl}`;
+        const message =`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body {
+              font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+              background-color: #f4f4f4;
+              margin: 0;
+              padding: 0;
+            }
+            .container {
+              max-width: 600px;
+              margin: 20px auto;
+              padding: 20px;
+              background-color: #ffffff;
+              border-radius: 10px;
+              box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+              animation: fadeIn 0.6s ease-in-out;
+            }
+            @keyframes fadeIn {
+              from {
+                opacity: 0;
+              }
+              to {
+                opacity: 1;
+              }
+            }
+            h1 {
+              color: #333333;
+              text-align: center;
+              font-size: 28px;
+              margin-bottom: 20px;
+              font-family: 'Segoe Script', cursive;
+            }
+            p {
+              color: #666666;
+              line-height: 1.6;
+              margin-bottom: 15px;
+              font-size: 16px;
+            }
+            .button {
+              display: inline-block;
+              background-color: #ffcc00;
+              color: #333333;
+              text-decoration: none;
+              padding: 12px 24px;
+              margin-top: 20px;
+              transition: background-color 0.3s ease-in-out;
+              animation: pulse 1.5s infinite alternate;
+              border-radius: 5px;
+              font-size: 18px;
+            }
+            .button:hover {
+              background-color: #ffdb4d;
+            }
+            @keyframes pulse {
+              from {
+                transform: scale(1);
+              }
+              to {
+                transform: scale(1.1);
+              }
+            }
+            .logo {
+              display: block;
+              margin: 0 auto;
+              width: 150px;
+              height: auto;
+              animation: fadeInLogo 1s ease-out;
+            }
+            @keyframes fadeInLogo {
+              from {
+                opacity: 0;
+                transform: translateY(-20px);
+              }
+              to {
+                opacity: 1;
+                transform: translateY(0);
+              }
+            }
+            .footer {
+              text-align: center;
+              margin-top: 30px;
+              color: #999999;
+              font-size: 14px;
+            }
+            .footer a {
+              color: #007bff;
+              text-decoration: none;
+            }
+          </style>
+        </head>
+        <body>
+        <div class="container">
+          <img src="https://image.pngaaa.com/581/811581-small.png" alt="Company Logo" class="logo">
+          <h1>Email Verification</h1>
+          <p>Hello ${name},</p>
+          <p>Welcome to our jewelry site! Thank you for signing up.</p>
+          <p>To verify your email address and activate your account, please click the button below:</p>
+          <a href="${verificationUrl}" class="button">Verify Email</a>
+          <p>If you did not sign up for our platform, please disregard this email.</p>
+          <p>Additionally, please note that this account was created from our admin site. For security reasons, we recommend changing your password after logging in.</p>
+          <p>Best Regards,</p>
+          <p>The Jewelry Team</p>
+        </div>
+        <div class="footer">
+          <p>Need help? <a href="mailto:support@example.com">Contact Us</a></p>
+        </div>
+        </body>
+        </html>`;        
         await sendEmail({
             email: newUser.email,
             subject: `Email Verification-Password ( ${password} ) `,
@@ -200,21 +423,21 @@ exports.verifyEmail = asyncErrorHandler(async (req, res, next) => {
     if (user.emailVerified) {
         return res.status(400).json({ success: false, message: 'Email already verified' });
     }
-    else{
-    // Mark email as verified
-    user.emailVerified = true;
-    user.verificationToken = undefined;
-    user.verificationTokenExpires = undefined;
+    else {
+        // Mark email as verified
+        user.emailVerified = true;
+        user.verificationToken = undefined;
+        user.verificationTokenExpires = undefined;
 
-    try {
-        // Save the user data after email verification
-        await user.save();
-        
-        // Respond with success message
-        return res.status(200).json({ success: true, message: 'Email verified successfully' });
-    } catch (error) {
-        next(new ErrorHandler(error.message, 500)); // Pass any error to error handling middleware with status code 500
-    }
+        try {
+            // Save the user data after email verification
+            await user.save();
+
+            // Respond with success message
+            return res.status(200).json({ success: true, message: 'Email verified successfully' });
+        } catch (error) {
+            next(new ErrorHandler(error.message, 500)); // Pass any error to error handling middleware with status code 500
+        }
     }
 });
 
@@ -273,7 +496,116 @@ exports.forgotPassword = asyncErrorHandler(async (req, res, next) => {
     // const resetUrl = `${req.protocol}://${req.get('host')}/api/vilasa-v1/user/resetpassword/${resetToken}`;
     const resetUrl = `${process.env.FRONTEND_URL}resetpassword?token=${resetToken}`;
     // Send the password reset email
-    const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a PUT request to: \n\n ${resetUrl}`;
+    const message = `<!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body {
+          font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+          background-color: #f4f4f4;
+          margin: 0;
+          padding: 0;
+        }
+        .container {
+          max-width: 600px;
+          margin: 20px auto;
+          padding: 20px;
+          background-color: #ffffff;
+          border-radius: 10px;
+          box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+          animation: fadeIn 0.6s ease-in-out;
+        }
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+        h1 {
+          color: #333333;
+          text-align: center;
+          font-size: 28px;
+          margin-bottom: 20px;
+          font-family: 'Segoe Script', cursive;
+        }
+        p {
+          color: #666666;
+          line-height: 1.6;
+          margin-bottom: 15px;
+          font-size: 16px;
+        }
+        .button {
+          display: inline-block;
+          background-color: #007bff;
+          color: #ffffff;
+          text-decoration: none;
+          padding: 12px 24px;
+          margin-top: 20px;
+          transition: background-color 0.3s ease-in-out;
+          animation: pulse 1.5s infinite alternate;
+          border-radius: 5px;
+          font-size: 18px;
+        }
+        .button:hover {
+          background-color: #0056b3;
+        }
+        @keyframes pulse {
+          from {
+            transform: scale(1);
+          }
+          to {
+            transform: scale(1.1);
+          }
+        }
+        .logo {
+          display: block;
+          margin: 0 auto;
+          width: 150px;
+          height: auto;
+          animation: fadeInLogo 1s ease-out;
+        }
+        @keyframes fadeInLogo {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .footer {
+          text-align: center;
+          margin-top: 30px;
+          color: #999999;
+          font-size: 14px;
+        }
+        .footer a {
+          color: #007bff;
+          text-decoration: none;
+        }
+      </style>
+    </head>
+    <body>
+    <div class="container">
+      <img src="https://image.pngaaa.com/581/811581-small.png" alt="Company Logo" class="logo">
+      <h1>Password Reset</h1>
+      <p>This email is being sent to you because a password reset request has been made.</p>
+      <p>To proceed with the password reset, please click the button below:</p>
+      <a href="${resetUrl}" class="button">Reset Password</a>
+      <p>If you did not initiate this request, you may ignore this email.</p>
+      <p>Best Regards,</p>
+      <p>The Team</p>
+    </div>
+    <div class="footer">
+      <p>If you need further assistance, please <a href="mailto:support@example.com">contact us</a>.</p>
+    </div>
+    </body>
+    </html>`;
 
     try {
         await sendEmail({
@@ -344,7 +676,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
 
         // Extract fields to update from the request body
         const { name, email, gender, phone, password } = req.body;
-        
+
 
         const fieldsToUpdate = {};
         if (name) fieldsToUpdate.name = name;
