@@ -63,6 +63,7 @@ exports.googleAuth = asyncErrorHandler(async (req, res) => {
 exports.registerUser = asyncErrorHandler(async (req, res, next) => {
     const { name, email, password, gender} = req.body;
     // Upload avatar to Cloudinary
+    console.log(req);
     const avatar = req.files.avatar;
 
     try {
@@ -73,7 +74,7 @@ exports.registerUser = asyncErrorHandler(async (req, res, next) => {
         }
 
         // Upload avatar to Cloudinary asynchronously
-        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar.tempfilePath, {
+        const avatarUploadPromise = cloudinary.v2.uploader.upload(avatar.tempFilePath, {
             folder: 'avatars',
             width: 150,
             crop: 'scale',

@@ -39,7 +39,10 @@ app.use(bodyParser.urlencoded({ limit: "100mb", extended: true, type: 'applicati
 
 
 
-app.use(fileUpload()); // Middleware for handling file uploads
+app.use(fileUpload({
+  useTempFiles : true,
+  tempFileDir : '/tmp/'
+})); // Middleware for handling file uploads
 app.use(cors(
   {
     origin:["http://localhost:5173","https://vilasajewelry.netlify.app","http://localhost:3000","http://localhost"],
