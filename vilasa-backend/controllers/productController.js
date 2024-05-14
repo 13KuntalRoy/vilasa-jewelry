@@ -21,7 +21,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
     }
 
     // Extract images from the request body
-    let images = req.body.images || [];
+    let images = req.files.images || [];
 
     // Upload product images to Cloudinary
     const uploadImages = async (images) => {
@@ -32,7 +32,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         const chunk = images.slice(i, i + 3);
         const uploadPromises = chunk.map(async (img) => {
           try {
-            const result = await cloudinary.v2.uploader.upload(img, { folder: 'Products' });
+            const result = await cloudinary.v2.uploader.upload(img.tempFilePath, { folder: 'Products' });
             imageLinks.push({ public_id: result.public_id, url: result.secure_url });
           } catch (error) {
             console.error('Failed to upload image to Cloudinary:', error.message);
@@ -141,8 +141,8 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
     }
 
     // Handle image upload if images are provided
-    if (req.body.images) {
-      let images = req.body.images;
+    if (req.files.images) {
+      let images = req.files.images;
 
       // Ensure images is an array
       if (!Array.isArray(images)) {
@@ -157,7 +157,7 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
       // Upload new images to Cloudinary
       const imagesLinks = [];
       for (let img of images) {
-        const result = await cloudinary.v2.uploader.upload(img, {
+        const result = await cloudinary.v2.uploader.upload(img.tempFilePath, {
           folder: "Products",
         });
 
@@ -616,7 +616,8 @@ exports.getProductCountByCategory = asyncErrorHandler(async (req, res, next) => 
 // Function to create a brand
 exports.createBrand = async (req, res, next) => {
   try {
-    const { title, description,picture } = req.body;
+    const { title, description} = req.body;
+    const picture = req.files.picture 
 
     // Check if picture file is provided
     if (!picture) {
@@ -624,7 +625,8 @@ exports.createBrand = async (req, res, next) => {
     }
 
     // Upload picture to Cloudinary
-    const result = await cloudinary.v2.uploader.upload(picture, { folder: 'Brand' });
+    const result = await cloudinary.v2.uploader.upload(picture.tempFilePath
+      , { folder: 'Brand' });
 
     // Create brand with picture URL from Cloudinary
     const brand = await Brand.create({ title, description, picture: { public_id: result.public_id, url: result.secure_url } });
@@ -651,7 +653,8 @@ exports.getAllBrands = async (req, res, next) => {
 exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description,picture } = req.body;
+    const { title, description} = req.body;
+    const picture = req.files.picture
 
     // Find the brand by ID
     const brand = await Brand.findById(id);
@@ -659,7 +662,7 @@ exports.updateBrand = async (req, res, next) => {
     // Check if picture file is provided
     if (picture) {
       // Upload new picture to Cloudinary with folder specified
-      const result = await cloudinary.v2.uploader.upload(picture, { folder: 'Brand' });
+      const result = await cloudinary.v2.uploader.upload(picture.tempFilePath, { folder: 'Brand' });
 
       // If brand has an old picture, delete it from Cloudinary
       if (brand.picture && brand.picture.public_id) {
@@ -723,12 +726,13 @@ exports.deleteBrand = async (req, res, next) => {
 
 exports.createCategory = async (req, res, next) => {
   try {
-    const { title, image } = req.body;
+    const { title} = req.body;
+    const  image = req.files.image
     let category;
 
     if (image) {
       // Upload image to Cloudinary
-      const result = await cloudinary.v2.uploader.upload(image, {
+      const result = await cloudinary.v2.uploader.upload(image.tempFilePath, {
         folder: 'category_images', // Specify the folder in Cloudinary to store category images
         width: 150,
         crop: 'scale',
@@ -751,7 +755,8 @@ exports.createCategory = async (req, res, next) => {
 exports.updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, image } = req.body;
+    const { title} = req.body;
+    const image  = req.files.image;
     let updatedCategory;
 
     // Find the existing category
@@ -764,7 +769,7 @@ exports.updateCategory = async (req, res, next) => {
     // If a new image is provided
     if (image) {
       // Upload new image to Cloudinary
-      const result = await cloudinary.v2.uploader.upload(image, {
+      const result = await cloudinary.v2.uploader.upload(image.tempFilePath, {
         folder: 'category_images' // Specify the folder in Cloudinary to store category images
       });
 
