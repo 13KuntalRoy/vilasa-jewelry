@@ -328,8 +328,8 @@ exports.resetPassword = asyncErrorHandler(async (req, res, next) => {
 exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
     try {
         // Find the user by ID
-        console.log("user",req.user.id);
-        console.log(req.files);
+        // console.log("user",req.user.id);
+        // console.log(req.files);
         const user = await User.findById(req.user.id);
         const avatar = req.files.avatar
         if (!user) {
@@ -358,20 +358,20 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
                 // Delete the old avatar picture from Cloudinary
                 await cloudinary.v2.uploader.destroy(user.avatar.public_id);
             }
-            console.log("passsssssssssssssssssss");
+            // console.log("passsssssssssssssssssss");
             // Upload the new avatar picture
             const avatarUpload = await cloudinary.v2.uploader.upload(avatar.tempFilePath, {
                 folder: 'avatars',
                 width: 150,
                 crop: 'scale',
             });
-            console.log("okkkkkkkkkkkkkkkk",avatarUpload.public_id);
+            // console.log("okkkkkkkkkkkkkkkk",avatarUpload.public_id);
             fieldsToUpdate.avatar = {
                 public_id: avatarUpload.public_id,
                 url: avatarUpload.secure_url,
             };
         }
-        console.log("hhhhhhhhhhhhhhhhhhhh");
+        // console.log("hhhhhhhhhhhhhhhhhhhh");
 
         // Handle password update
         if (password) {
@@ -391,7 +391,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         sendJWtToken(updatedUser, 200, res);
     } catch (error) {
         // Handle any errors
-        console.error(error);
+        // console.error(error);
         return res.status(500).json({ success: false, message: 'An error occurred while updating user profile.' });
     }
 });
