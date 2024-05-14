@@ -328,7 +328,10 @@ exports.resetPassword = asyncErrorHandler(async (req, res, next) => {
 exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
     try {
         // Find the user by ID
+        console.log("user",req.user.id);
+        console.log(req.files);
         const user = await User.findById(req.user.id);
+        const avatar = req.files.avatar
         if (!user) {
             return res.status(404).json({ success: false, message: 'User not found.' });
         }
@@ -340,7 +343,8 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
 
         // Extract fields to update from the request body
         const { name, email, gender, phone, password } = req.body;
-        const avatar = req.files.avatar
+        
+
         const fieldsToUpdate = {};
         if (name) fieldsToUpdate.name = name;
         if (email) fieldsToUpdate.email = email;
@@ -354,18 +358,20 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
                 // Delete the old avatar picture from Cloudinary
                 await cloudinary.v2.uploader.destroy(user.avatar.public_id);
             }
-
+            console.log("passsssssssssssssssssss");
             // Upload the new avatar picture
-            const avatarUpload = await cloudinary.v2.uploader.upload(avatar.tempfilePath, {
+            const avatarUpload = await cloudinary.v2.uploader.upload(avatar.tempFilePath, {
                 folder: 'avatars',
                 width: 150,
                 crop: 'scale',
             });
+            console.log("okkkkkkkkkkkkkkkk",avatarUpload.public_id);
             fieldsToUpdate.avatar = {
                 public_id: avatarUpload.public_id,
                 url: avatarUpload.secure_url,
             };
         }
+        console.log("hhhhhhhhhhhhhhhhhhhh");
 
         // Handle password update
         if (password) {
@@ -456,7 +462,7 @@ exports.updateUserById = asyncErrorHandler(async (req, res, next) => {
             if (req.body.hasOwnProperty(key)) {
                 // If updating the avatar and a file is provided, upload and update the avatar
                 if (key === 'avatar' && req.file) {
-                    const avatarUpload = await cloudinary.uploader.upload(req.file.path, {
+                    const avatarUpload = await cloudinary.uploader.upload(req.file.avatar.tempFilePath, {
                         folder: 'avatars',
                         width: 150,
                         crop: 'scale',
