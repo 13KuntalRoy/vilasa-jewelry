@@ -653,11 +653,15 @@ exports.getAllBrands = async (req, res, next) => {
 exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, description} = req.body;
-    const picture = req.files.picture
+    const { title, description } = req.body;
+    const picture = req.files.picture;
 
     // Find the brand by ID
     const brand = await Brand.findById(id);
+
+    // Update brand with new title and description
+    brand.title = title;
+    brand.description = description;
 
     // Check if picture file is provided
     if (picture) {
@@ -670,26 +674,19 @@ exports.updateBrand = async (req, res, next) => {
       }
 
       // Update brand with new picture URL from Cloudinary
-      brand.title = title;
-      brand.description = description;
       brand.picture = result.secure_url;
-      await brand.save();
-
-      // Send response with updated brand
-      res.status(200).json({ success: true, brand });
-    } else {
-      // If no picture file provided, update brand without modifying the picture field
-      brand.title = title;
-      brand.description = description;
-      await brand.save();
-
-      // Send response with updated brand
-      res.status(200).json({ success: true, brand });
     }
+
+    // Save the updated brand
+    await brand.save();
+
+    // Send response with updated brand
+    res.status(200).json({ success: true, brand });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
   }
 };
+
 exports.getAllBrands = async (req, res, next) => {
   try {
     // Find all brands
