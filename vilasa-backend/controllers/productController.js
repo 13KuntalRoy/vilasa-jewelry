@@ -755,22 +755,20 @@ exports.createCategory = async (req, res, next) => {
 exports.updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title} = req.body;
-    const image  = req.files.image;
+    const { title } = req.body;
+    const image = req.files.image;
     let updatedCategory;
 
-    // Find the existing category
     const existingCategory = await Category.findById(id);
 
     if (!existingCategory) {
       return res.status(404).json({ success: false, message: 'Category not found' });
     }
 
-    // If a new image is provided
+    // Check if image is null
     if (image) {
-      // Upload new image to Cloudinary
       const result = await cloudinary.v2.uploader.upload(image.tempFilePath, {
-        folder: 'category_images' // Specify the folder in Cloudinary to store category images
+        folder: 'category_images'
       });
 
       // If the existing category has an image, delete it from Cloudinary
@@ -782,18 +780,20 @@ exports.updateCategory = async (req, res, next) => {
       updatedCategory = await Category.findByIdAndUpdate(
         id,
         { title, image: { public_id: result.public_id, url: result.secure_url } },
-        { new: true }
+        { new: true } // Return the updated category object after the update operation
       );
     } else {
-      // If no new image provided, update category without changing the image
+      // If no new image is provided, update the category without changing the image
       updatedCategory = await Category.findByIdAndUpdate(id, { title }, { new: true });
     }
 
+    // Return a success response with the updated category object
     res.status(200).json({ success: true, category: updatedCategory });
   } catch (error) {
-    next(new ErrorHandler(error.message, 400));
+    next(error); // Pass the error to the error handler middleware
   }
 };
+
 
 exports.getAllCategories = async (req, res, next) => {
   try {
