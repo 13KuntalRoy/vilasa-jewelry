@@ -657,11 +657,16 @@ exports.updateBrand = async (req, res, next) => {
     const picture = req.files && req.files.picture; // Check if req.files.picture exists
 
     // Find the brand by ID
-    const brand = await Brand.findById(id);
+    let brand = await Brand.findById(id);
+
+    // Check if brand exists
+    if (!brand) {
+      return res.status(404).json({ success: false, message: 'Brand not found' });
+    }
 
     // Update brand with new title and description
-    if(title){brand.title = title};
-    if(description){brand.description = description};
+    if (title) { brand.title = title };
+    if (description) { brand.description = description };
 
     // Check if picture file is provided
     if (picture) {
