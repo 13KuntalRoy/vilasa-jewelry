@@ -7,7 +7,7 @@ exports.addToWishlist = async (req, res) => {
   try {
     const { productId } = req.body;
     const userId = req.user._id; // Assuming user ID is available in req.user
-
+    console.log(productId);
     let wishlist = await Wishlist.findOne({ user: userId });
 
     if (!wishlist) {
