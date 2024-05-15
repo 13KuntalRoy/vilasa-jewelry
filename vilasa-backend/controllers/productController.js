@@ -660,8 +660,8 @@ exports.updateBrand = async (req, res, next) => {
     const brand = await Brand.findById(id);
 
     // Update brand with new title and description
-    brand.title = title;
-    brand.description = description;
+    if(title){brand.title = title};
+    if(description){brand.description = description};
 
     // Check if picture file is provided
     if (picture) {
