@@ -4,16 +4,17 @@ const Subscriber = require('../model/subscriber');
 exports.addSubscriber = (req, res) => {
     const { email } = req.body;
 
+
     if (!email) {
         return res.status(400).json({ error: 'Email is required' });
     }
 
     // Assuming subscribers is an array, you may need to change this logic based on your actual data model
-    if (subscribers.some(subscriber => subscriber.email === email)) {
+    if (Subscriber.some(subscriber => subscriber.email === email)) {
         return res.status(400).json({ error: 'Email already exists' });
     }
 
-    subscribers.push({ email });
+    Subscriber.push({ email });
     res.status(201).json({ message: 'Subscriber added successfully' });
 };
 
