@@ -658,13 +658,35 @@ exports.getProductsByBrand = asyncErrorHandler(async (req, res, next) => {
  * @access  Public
  */
 exports.getTopRatedProducts = asyncErrorHandler(async (req, res, next) => {
-    const products = await ProductModel.find().sort({ ratings: -1 }).limit(10);
+  try {
+      const products = await ProductModel.find().sort({ ratings: -1 }).limit(10);
+      
+      if (!products || products.length === 0) {
+          return res.status(404).json({
+              success: false,
+              error: {
+                  message: "No top rated products found",
+                  statusCode: 404
+              }
+          });
+      }
 
-    res.status(200).json({
-        success: true,
-        products: products,
-    });
+      res.status(200).json({
+          success: true,
+          products: products,
+      });
+  } catch (error) {
+      console.error("Failed to fetch product details:", error);
+      res.status(500).json({
+          success: false,
+          error: {
+              message: "Failed to fetch product details",
+              statusCode: 500
+          }
+      });
+  }
 });
+
 
 /**
  * @route   GET /api/products/related/:id
@@ -1142,35 +1164,33 @@ exports.getAllProductReviews = async (req, res) => {
 
 exports.deleteProductImage = async (productId, imageId) => {
   try {
-      // Find the product by ID
-      const product = await ProductModel.findById(productId);
+    const product = await ProductModel.findById(productId);
 
-      // If product not found, return error
-      if (!product) {
-          return { success: false, message: "Product not found" };
-      }
+    if (!product) {
+      return { success: false, message: "Product not found" };
+    }
 
-      // Find the index of the image to delete
-      const indexToDelete = product.images.findIndex(image => image._id === imageId);
+    // Ensure imageId and _id are treated as strings for comparison
+    const indexToDelete = product.images.findIndex(image => image._id.toString() === imageId.toString());
 
-      // If image not found, return error
-      if (indexToDelete === -1) {
-          return { success: false, message: "Image not found in product" };
-      }
+    if (indexToDelete === -1) {
+      return { success: false, message: "Image not found in product" };
+    }
 
-      // Delete image from Cloudinary
-      await cloudinary.uploader.destroy(product.images[indexToDelete].public_id);
+    // Delete image from Cloudinary
+    const deletedImage = await cloudinary.uploader.destroy(product.images[indexToDelete].public_id);
 
-      // Remove the image from the product's images array
-      product.images.splice(indexToDelete, 1);
+    if (deletedImage.result !== 'ok') {
+      return { success: false, message: "Error deleting image from Cloudinary" };
+    }
 
-      // Save the updated product
-      await product.save();
+    product.images.splice(indexToDelete, 1);
+    await product.save();
 
-      return { success: true, message: "Image deleted successfully" };
+    return { success: true, message: "Image deleted successfully" };
   } catch (error) {
-      console.error(error);
-      return { success: false, message: "An error occurred while deleting the image" };
+    console.error("Error deleting product image:", error);
+    return { success: false, message: "An error occurred while deleting the image" };
   }
 };
 
