@@ -17,7 +17,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
   try {
     // Extract admin user ID from request
     const adminUserId = req.user.id;
-
+    console.log(req);
     // Extract product data based on content type
     let productData;
     let images = [];
@@ -148,57 +148,166 @@ exports.getAllProductsAdmin = asyncErrorHandler(async (req, res) => {
  * @access  Private (Admin)
  */
 
-exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
+// exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
+//   try {
+//     // Find the product by ID
+//     let product = await ProductModel.findById(req.params.id);
+
+//     // If product is not found, return an error
+//     if (!product) {
+//       return next(new ErrorHandler("Product not found", 404));
+//     }
+
+//     // Handle image upload if images are provided
+//     if (req.files.images) {
+//       let images = req.files.images;
+
+//       // Ensure images is an array
+//       if (!Array.isArray(images)) {
+//         images = [images];
+//       }
+
+//       // Delete existing images from Cloudinary
+//       for (let i = 0; i < product.images.length; i++) {
+//         await cloudinary.v2.uploader.destroy(product.images[i].public_id);
+//       }
+
+//       // Upload new images to Cloudinary
+//       const imagesLinks = [];
+//       for (let img of images) {
+//         const result = await cloudinary.v2.uploader.upload(img.tempFilePath, {
+//           folder: "Products",
+//         });
+
+//         imagesLinks.push({
+//           public_id: result.public_id,
+//           url: result.secure_url,
+//         });
+//       }
+
+//       // Update product data with new images
+//       req.body.images = imagesLinks;
+//     }
+
+//     // Update the product in the database
+//     product = await ProductModel.findByIdAndUpdate(
+//       req.params.id,
+//       req.body,
+//       {
+//         new: true,
+//         runValidators: true,
+//         useFindAndModify: false,
+//       }
+//     );
+
+//     // Send response with updated product
+//     res.status(200).json({
+//       success: true,
+//       product: product,
+//     });
+//   } catch (error) {
+//     // Handle errors
+//     console.error(error);
+//     next(new ErrorHandler(500, 'An error occurred while updating the product.'));
+//   }
+// });
+exports.updateProduct = async (req, res, next) => {
   try {
     // Find the product by ID
     let product = await ProductModel.findById(req.params.id);
 
     // If product is not found, return an error
     if (!product) {
-      return next(new ErrorHandler("Product not found", 404));
+      return res.status(404).json({ success: false, message: "Product not found" });
     }
 
-    // Handle image upload if images are provided
-    if (req.files.images) {
-      let images = req.files.images;
-
-      // Ensure images is an array
-      if (!Array.isArray(images)) {
-        images = [images];
+    // Extract product data based on content type
+    let productData;
+    let images = [];
+    if (req.is('json')) {
+      // JSON request
+      productData = req.body;
+      images = req.files ? req.files.images || [] : [];
+    } else if (req.is('multipart/form-data')) {
+      // Form-data request
+      productData = {
+        discount: req.body.discount,
+        name: req.body.name,
+        description: req.body.description,
+        price: req.body.price,
+        cuttedPrice: req.body.cuttedPrice,
+        category: req.body.category,
+        stock: req.body.stock,
+        warranty: req.body.warranty,
+        ratings: req.body.ratings,
+        numOfReviews: req.body.numOfReviews,
+        offerStartTime: req.body.offerStartTime,
+        offerEndTime: req.body.offerEndTime,
+        brand: req.body.brand,
+        highlights: [],
+        specifications: []
+      };
+      // Process highlights
+      for (let i = 0; req.body[`highlights[${i}]`]; i++) {
+        productData.highlights.push(req.body[`highlights[${i}]`]);
       }
+      // Process specifications
+      for (let i = 0; req.body[`specifications[${i}][title]`]; i++) {
+        productData.specifications.push({
+          title: req.body[`specifications[${i}][title]`],
+          description: req.body[`specifications[${i}][description]`]
+        });
+      }
+      // Process images
+      images = req.files ? req.files.images || [] : [];
+    }
 
-      // Delete existing images from Cloudinary
-      for (let i = 0; i < product.images.length; i++) {
-        await cloudinary.v2.uploader.destroy(product.images[i].public_id);
+    // Handle image upload
+    if (images.length > 0) {
+      // Check if old images need to be deleted
+      if (productData.deleteOldImages === 'true') {
+        // Delete existing images from Cloudinary
+        for (let i = 0; i < product.images.length; i++) {
+          await cloudinary.uploader.destroy(product.images[i].public_id);
+        }
+        // Clear the product's images array
+        product.images = [];
       }
 
       // Upload new images to Cloudinary
-      const imagesLinks = [];
-      for (let img of images) {
-        const result = await cloudinary.v2.uploader.upload(img.tempFilePath, {
-          folder: "Products",
-        });
+      const uploadedImages = await Promise.all(images.map(async (image) => {
+        const result = await cloudinary.uploader.upload(image.tempFilePath, { folder: 'Products' });
+        return { public_id: result.public_id, url: result.secure_url };
+      }));
 
-        imagesLinks.push({
-          public_id: result.public_id,
-          url: result.secure_url,
-        });
-      }
-
-      // Update product data with new images
-      req.body.images = imagesLinks;
+      // Add new images to the product's images array
+      product.images.push(...uploadedImages);
     }
 
-    // Update the product in the database
-    product = await ProductModel.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-        useFindAndModify: false,
+    // Handle specification deletion
+    if (productData.deleteSpecifications === 'true') {
+      // Clear the product's specifications array
+      product.specifications = [];
+    }
+
+    // Update product fields
+    for (let key in productData) {
+      if (productData.hasOwnProperty(key)) {
+        if (key === "highlights" || key === "specifications" || key === "deleteOldImages" || key === "deleteSpecifications") {
+          // Skip these keys as they are already processed
+          continue;
+        } else if (productData[key] === null || productData[key] === undefined) {
+          // Delete fields with null or undefined values
+          delete product[key];
+        } else {
+          // Update fields with new values
+          product[key] = productData[key];
+        }
       }
-    );
+    }
+
+    // Save the updated product
+    await product.save();
 
     // Send response with updated product
     res.status(200).json({
@@ -210,7 +319,10 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
     console.error(error);
     next(new ErrorHandler(500, 'An error occurred while updating the product.'));
   }
-});
+};
+
+
+
 
 
 /**
@@ -1027,3 +1139,38 @@ exports.getAllProductReviews = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch all product reviews' });
   }
 };
+
+exports.deleteProductImage = async (productId, imageId) => {
+  try {
+      // Find the product by ID
+      const product = await ProductModel.findById(productId);
+
+      // If product not found, return error
+      if (!product) {
+          return { success: false, message: "Product not found" };
+      }
+
+      // Find the index of the image to delete
+      const indexToDelete = product.images.findIndex(image => image._id === imageId);
+
+      // If image not found, return error
+      if (indexToDelete === -1) {
+          return { success: false, message: "Image not found in product" };
+      }
+
+      // Delete image from Cloudinary
+      await cloudinary.uploader.destroy(product.images[indexToDelete].public_id);
+
+      // Remove the image from the product's images array
+      product.images.splice(indexToDelete, 1);
+
+      // Save the updated product
+      await product.save();
+
+      return { success: true, message: "Image deleted successfully" };
+  } catch (error) {
+      console.error(error);
+      return { success: false, message: "An error occurred while deleting the image" };
+  }
+};
+

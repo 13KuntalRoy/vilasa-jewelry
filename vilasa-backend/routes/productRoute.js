@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { isAuthenticatedUser, authorizeRoles } = require("../middleware/auth");
+const asyncErrorHandler = require("../middleware/asyncErrorHandler");
 const {
     createProduct,
     getAllProducts,
@@ -33,7 +34,8 @@ const {
     getProductsByHighlight,
     getRandomProductRecommendations,
     getReviewsForLandingPage,
-    getAllProductReviews
+    getAllProductReviews,
+    deleteProductImage
 } = require('../controllers/productController');
 
 // Routes for products
@@ -119,6 +121,20 @@ router.route('/reviews/landing-page')
 
 router.route('/allreviews')
   .get(isAuthenticatedUser,authorizeRoles('admin'),getAllProductReviews)
+
+  router.route('/:productId/images/:imageId')
+  .delete(asyncErrorHandler(async (req, res, next) => {
+      const productId = req.params.productId;
+      const imageId = req.params.imageId;
+
+      const result = await deleteProductImage(productId, imageId);
+
+      if (result.success) {
+          res.status(200).json({ success: true, message: result.message });
+      } else {
+          res.status(400).json({ success: false, message: result.message });
+      }
+  }));
 
 
 
