@@ -85,37 +85,32 @@ exports.updateDynamicImage = asyncErrorHandler(async (req, res, next) => {
 
     // Upload new image to Cloudinary with a specified folder
     const result = await cloudinary.uploader.upload(file.tempFilePath, { folder: 'dynamic-images' });
-
     // Update database record with new image URL and public_id
     dynamicImage.imageUrl = {
       public_id: result.public_id,
       url: result.secure_url
     };
+  }
 
-    // Save the updated dynamic image record
-    await dynamicImage.save();
-
-    res.status(200).json({
-      success: true,
-      data: dynamicImage,
-    });
-  } else {
-    // Update other fields if provided in the request body
-    for (const key in req.body) {
-      if (req.body.hasOwnProperty(key)) {
+  // Update other fields if provided in the request body
+  for (const key in req.body) {
+    if (req.body.hasOwnProperty(key)) {
+      // Ensure that the key is not "image", as we've already handled image separately
+      if (key !== "image") {
         dynamicImage[key] = req.body[key];
       }
     }
-
-    // Save the updated dynamic image record
-    dynamicImage = await dynamicImage.save();
-
-    res.status(200).json({
-      success: true,
-      data: dynamicImage,
-    });
   }
+
+  // Save the updated dynamic image record
+  dynamicImage = await dynamicImage.save();
+
+  res.status(200).json({
+    success: true,
+    data: dynamicImage,
+  });
 });
+
 
 // @desc    Get dynamic images by group
 // @route   GET /api/dynamic-images/group/:group
