@@ -35,7 +35,8 @@ const {
     getRandomProductRecommendations,
     getReviewsForLandingPage,
     getAllProductReviews,
-    deleteProductImage
+    deleteProductImage,
+    updateProductReview
 } = require('../controllers/productController');
 
 // Routes for products
@@ -62,13 +63,13 @@ router.route('/products/category/:category')
 router.route('/products/brand/:brand')
     .get( getProductsByBrand);
 
-router.route('/products/top-rated')
-    .get( getTopRatedProducts);
+router.route('/products/top-rated/product')
+    .get(getTopRatedProducts);
 
 router.route('/products/related/:id')
     .get( getRelatedProducts);
 
-router.route('/products/price-range')
+router.route('/products/price-range/search')
     .get( getProductsByPriceRange);
 
 router.route('/products-search/search')
@@ -135,6 +136,9 @@ router.route('/allreviews')
           res.status(400).json({ success: false, message: result.message });
       }
   }));
+
+router.route('/products/:productId/reviews/:reviewId')
+  .put(updateProductReview)
 
 
 

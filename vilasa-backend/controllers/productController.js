@@ -449,54 +449,59 @@ exports.getProductDetails = asyncErrorHandler(async (req, res, next) => {
 //     success: true,
 //   });
 // });
-/**
- * @route   POST /api/products/:id/reviews
- * @desc    Create or update a product review
- * @access  Private
- */
 exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
   try {
-    const { ratings, comment, productId, title, recommend } = req.body;
+    const { ratings, comment, title } = req.body;
+    const productId = req.params.id;
+
+    // Validate ratings value
+    if (isNaN(ratings)) {
+      return next(new ErrorHandler("Invalid ratings value", 400));
+    }
+
+    // Validate presence of required fields
+    if (!ratings || !comment || !title) {
+      return next(new ErrorHandler("Please provide all required fields", 400));
+    }
+
+    // Upload image to Cloudinary
+    const result = await cloudinary.uploader.upload(req.files.images.tempFilePath);
+    const imageUrl = { public_id: result.public_id, url: result.secure_url };
+
+    // Create review object
     const review = {
-      userId: req.user._id,
+      user: req.user._id, // Populate user field with user ID
       name: req.user.name,
-      ratings: Number(ratings),
+      rating: Number(ratings), // Corrected field name
       title: title,
       comment: comment,
-      recommend: recommend,
-      avatar: req.user.avatar.url, // Add user avatar URL to the review object
+      images: imageUrl, // Use a single image object instead of an array
     };
 
+    // Find the product by ID
     const product = await ProductModel.findById(productId);
 
     if (!product) {
       return next(new ErrorHandler("Product not found", 404));
     }
 
-    // Check if user already reviewed
-    const existingReviewIndex = product.reviews.findIndex((rev) => rev.userId.toString() === req.user._id.toString());
+    // Add the new review to the product's reviews array
+    product.reviews.push(review);
 
-    if (existingReviewIndex !== -1) {
-      // Update the existing review
-      product.reviews[existingReviewIndex] = review;
-    } else {
-      // Add a new review
-      product.reviews.push(review);
-    }
-
-    // Update the number of reviews
+    // Update number of reviews
     product.numOfReviews = product.reviews.length;
 
     // Calculate average ratings
     let totalRatings = 0;
     product.reviews.forEach((rev) => {
-      totalRatings += rev.ratings;
+      totalRatings += rev.rating; // Use 'rating' field
     });
     product.ratings = totalRatings / product.reviews.length;
 
-    // Save to the database
+    // Save product changes to the database
     await product.save();
 
+    // Send success response
     res.status(200).json({
       success: true,
     });
@@ -504,6 +509,7 @@ exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
     return next(new ErrorHandler("Failed to create or update product review", 500));
   }
 });
+
 
 /**
  * @route   GET /api/products/:id/reviews
@@ -652,42 +658,32 @@ exports.getProductsByBrand = asyncErrorHandler(async (req, res, next) => {
 });
 
 
-/**
- * @route   GET /api/products/top-rated
- * @desc    Get top rated products
- * @access  Public
- */
-exports.getTopRatedProducts = asyncErrorHandler(async (req, res, next) => {
+exports.getTopRatedProducts = asyncErrorHandler( async (req, res, next) => {
   try {
-      const products = await ProductModel.find().sort({ ratings: -1 }).limit(10);
-      
-      if (!products || products.length === 0) {
-          return res.status(404).json({
-              success: false,
-              error: {
-                  message: "No top rated products found",
-                  statusCode: 404
-              }
-          });
-      }
+    // Fetch top-rated products by sorting them in descending order of ratings and limiting to 10
+    const topRatedProducts = await ProductModel.find().sort({ ratings: -1 }).limit(10);
 
-      res.status(200).json({
-          success: true,
-          products: products,
+    if (!topRatedProducts || topRatedProducts.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No top-rated products found"
       });
+    }
+
+    // If top-rated products are found, send them in the response
+    res.status(200).json({
+      success: true,
+      products: topRatedProducts
+    });
   } catch (error) {
-      console.error("Failed to fetch product details:", error);
-      res.status(500).json({
-          success: false,
-          error: {
-              message: "Failed to fetch product details",
-              statusCode: 500
-          }
-      });
+    // Handle any errors that occur during the process
+    console.error("Failed to fetch top-rated products:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch top-rated products"
+    });
   }
 });
-
-
 /**
  * @route   GET /api/products/related/:id
  * @desc    Get related products
@@ -712,18 +708,40 @@ exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
  * @desc    Get products by price range
  * @access  Public
  */
-exports.getProductsByPriceRange = asyncErrorHandler(async (req, res, next) => {
-    const { minPrice, maxPrice } = req.query;
-    const products = await ProductModel.find({
-        price: { $gte: minPrice, $lte: maxPrice }
-    });
+exports.getProductsByPriceRange = async (req, res) => {
+  try {
+      const { minPrice, maxPrice } = req.query;
 
-    res.status(200).json({
-        success: true,
-        products: products,
-    });
-});
+      // Validate query parameters
+      if (!minPrice || !maxPrice || isNaN(minPrice) || isNaN(maxPrice)) {
+          return res.status(400).json({
+              success: false,
+              error: {
+                  message: "Invalid price range parameters",
+                  statusCode: 400
+              }
+          });
+      }
 
+      const products = await ProductModel.find({
+          price: { $gte: minPrice, $lte: maxPrice }
+      });
+
+      res.status(200).json({
+          success: true,
+          products: products,
+      });
+  } catch (error) {
+      console.error("Failed to fetch product details:", error);
+      res.status(500).json({
+          success: false,
+          error: {
+              message: "Failed to fetch product details",
+              statusCode: 500
+          }
+      });
+  }
+};
 /**
  * @route   GET /api/products/search
  * @desc    Get products by search query
@@ -731,6 +749,7 @@ exports.getProductsByPriceRange = asyncErrorHandler(async (req, res, next) => {
  */
 exports.searchProducts = async (req, res, next) => {
   try {
+    
     const apiFeature = new SearchFeatures(ProductModel.find(), req.query)
       .fuzzySearch() // Apply search filter based on the query parameters
       .filter(); // Apply additional filters based on the query parameters
@@ -1194,3 +1213,44 @@ exports.deleteProductImage = async (productId, imageId) => {
   }
 };
 
+exports.updateProductReview = async (req, res, next) => {
+  try {
+    const productId = req.params.productId;
+    const reviewId = req.params.reviewId;
+    const { rating, comment,showOnLandingPage } = req.body;
+
+    // Find the product by ID
+    const product = await ProductModel.findById(productId);
+
+    if (!product) {
+      return res.status(404).json({ success: false, message: 'Product not found' });
+    }
+
+    // Find the review by ID
+    const review = product.reviews.id(reviewId);
+
+    if (!review) {
+      return res.status(404).json({ success: false, message: 'Review not found' });
+    }
+
+    // Update the review properties
+    if (rating) {
+      review.rating = rating;
+    }
+
+    if (comment) {
+      review.comment = comment;
+    }
+    if(showOnLandingPage){
+      review.showOnLandingPage=showOnLandingPage;
+    }
+
+    // Save the updated product
+    await product.save();
+
+    res.status(200).json({ success: true, message: 'Review updated successfully' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Failed to update review' });
+  }
+};
