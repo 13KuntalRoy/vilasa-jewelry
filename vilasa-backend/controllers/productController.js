@@ -21,6 +21,8 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
     }
 
     // Extract images from the request body
+    let highlights =req.body.highlights|| [];
+    let specifications = req.body.specifications || [];
     let images = req.files.images || [];
 
     // Upload product images to Cloudinary
@@ -49,7 +51,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
     const imagesLinks = await uploadImages(images);
 
     // Prepare product data with image links
-    const productData = { ...req.body, user: req.user.id, images: imagesLinks };
+    const productData = { ...req.body, user: req.user.id, images: imagesLinks,highlights:highlights,specifications:specifications };
 
     // Create the new product
     const product = await ProductModel.create(productData);
