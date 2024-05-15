@@ -15,43 +15,59 @@ const cloudinary = require("cloudinary");
  */
 exports.createProduct = asyncErrorHandler(async (req, res) => {
   try {
-    // Ensure that the request contains product data
-    if (!req.body) {
-      throw new ErrorHandler(400, 'Product data is required');
+    // Extract admin user ID from request
+    const adminUserId = req.user.id;
+
+    // Extract product data based on content type
+    let productData;
+    let images = [];
+    if (req.is('json')) {
+      // JSON request
+      productData = req.body;
+      images = req.files ? req.files.images || [] : [];
+    } else if (req.is('multipart/form-data')) {
+      // Form-data request
+      productData = {
+        discount: req.body.discount,
+        name: req.body.name,
+        description: req.body.description,
+        price: req.body.price,
+        cuttedPrice: req.body.cuttedPrice,
+        category: req.body.category,
+        stock: req.body.stock,
+        warranty: req.body.warranty,
+        ratings: req.body.ratings,
+        numOfReviews: req.body.numOfReviews,
+        offerStartTime: req.body.offerStartTime,
+        offerEndTime: req.body.offerEndTime,
+        brand: req.body.brand,
+        highlights: [],
+        specifications: []
+      };
+      // Process highlights
+      for (let i = 0; req.body[`highlights[${i}]`]; i++) {
+        productData.highlights.push(req.body[`highlights[${i}]`]);
+      }
+      // Process specifications
+      for (let i = 0; req.body[`specifications[${i}][title]`]; i++) {
+        productData.specifications.push({
+          title: req.body[`specifications[${i}][title]`],
+          description: req.body[`specifications[${i}][description]`]
+        });
+      }
+      // Process images
+      images = req.files ? req.files.images || [] : [];
     }
 
-    // Extract images from the request body
-    let highlights =req.body.highlights|| [];
-    let specifications = req.body.specifications || [];
-    let images = req.files.images || [];
+    // Upload images to Cloudinary and get image links
+    const uploadedImages = await Promise.all(images.map(async (image) => {
+      const result = await cloudinary.uploader.upload(image.tempFilePath, { folder: 'Products' });
+      return { public_id: result.public_id, url: result.secure_url };
+    }));
 
-    // Upload product images to Cloudinary
-    const uploadImages = async (images) => {
-      const imageLinks = [];
-
-      // Upload images in batches to respect Cloudinary's upload limits
-      for (let i = 0; i < images.length; i += 3) {
-        const chunk = images.slice(i, i + 3);
-        const uploadPromises = chunk.map(async (img) => {
-          try {
-            const result = await cloudinary.v2.uploader.upload(img.tempFilePath, { folder: 'Products' });
-            imageLinks.push({ public_id: result.public_id, url: result.secure_url });
-          } catch (error) {
-            console.error('Failed to upload image to Cloudinary:', error.message);
-            throw new ErrorHandler(500, 'Failed to upload product images to Cloudinary');
-          }
-        });
-        await Promise.all(uploadPromises);
-      }
-
-      return imageLinks;
-    };
-
-    // Call the function to upload images
-    const imagesLinks = await uploadImages(images);
-
-    // Prepare product data with image links
-    const productData = { ...req.body, user: req.user.id, images: imagesLinks,highlights:highlights,specifications:specifications };
+    // Add admin user ID and uploaded image links to product data
+    productData.user = adminUserId;
+    productData.images = uploadedImages;
 
     // Create the new product
     const product = await ProductModel.create(productData);
