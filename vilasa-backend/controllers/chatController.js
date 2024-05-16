@@ -5,13 +5,19 @@ const cloudinary = require('cloudinary').v2;
 
 // Create a new chat message with optional image upload
 const createChatMessage = asyncHandler(async (req, res) => {
-  const { sender, receiver, enquiry, message, senderRole, picture } = req.body;
+  const { receiver, enquiry, message} = req.body;
+  const sender = req.user._id;
+  const senderRole = req.user.role;
+  const  picture = req.files.picture;
+
+  console.log(req.user);
+
 
   // If picture is included in the request body, upload it to Cloudinary
   let pictureUrl = null;
   if (picture) {
     try {
-      const result = await cloudinary.uploader.upload(picture, { folder: 'chat_images' });
+      const result = await cloudinary.uploader.upload(picture.tempFilePath, { folder: 'chat_images' });
       pictureUrl = result.secure_url; // Get the Cloudinary URL of the uploaded image
     } catch (error) {
       console.error('Error uploading image to Cloudinary:', error);
