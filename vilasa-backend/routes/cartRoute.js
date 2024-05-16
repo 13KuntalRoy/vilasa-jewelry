@@ -1,14 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const cartController = require('../controllers/cartController');
-
+const { isAuthenticatedUser, authorizeRoles } = require("../middleware/auth");
 // Define routes for cart-related operations using router.route
 router.route('/cart-items')
-  .get(cartController.getAllItemsInCart) // Get all items in the cart
-  .post(cartController.addToCart); // Add item to cart
+  .get(isAuthenticatedUser,cartController.getAllItemsInCart) // Get all items in the cart
+  .post(isAuthenticatedUser,cartController.addToCart); // Add item to cart
 
 router.route('/cart-items/:itemId')
-  .put(cartController.updateCartItemQuantity) // Update item quantity in cart
-  .delete(cartController.deleteCartItem); // Delete item from cart
+  .put(isAuthenticatedUser,cartController.updateCartItemQuantity) // Update item quantity in cart
+  .delete(isAuthenticatedUser,cartController.deleteCartItem); // Delete item from cart
 
 module.exports = router;
