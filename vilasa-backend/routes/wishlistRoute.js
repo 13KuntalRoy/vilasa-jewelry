@@ -8,6 +8,6 @@ router.route('/wishlist-items')
   .post(isAuthenticatedUser,wishlistController.addToWishlist); // Add product to wishlist
 
 router.route('/wishlist-items/:itemId')
-  .delete(wishlistController.deleteFromWishlist); // Delete product from wishlist
+  .delete(isAuthenticatedUser,wishlistController.deleteFromWishlist); // Delete product from wishlist
 
 module.exports = router;
