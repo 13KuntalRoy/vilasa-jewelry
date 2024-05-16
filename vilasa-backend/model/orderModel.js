@@ -93,11 +93,11 @@ const orderSchema = new mongoose.Schema({
         required: true,
         // Explanation: Quantity of the ordered item. Required field.
       },
-      image: {
-        type: String,
-        required: true,
-        // Explanation: Image URL of the ordered item. Required field.
-      },
+      // image: {
+      //   type: String,
+      //   required: true,
+      //   // Explanation: Image URL of the ordered item. Required field.
+      // },
       productId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product', // Reference to the Product model

@@ -16,9 +16,10 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
     }
+    console.log("KKKKKKKKKK",paymentInfo);
 
     // Check payment status
-    if (!paymentInfo.success) {
+    if (!paymentInfo.status) {
         return next(new ErrorHandler("Payment failed", 400));
     }
 
@@ -28,6 +29,7 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     if (orderExist) {
         return next(new ErrorHandler("Order Already Placed", 400));
     }
+    console.log("Moye moye");
 
     // Create the order
     const order = await Order.create({
@@ -38,6 +40,7 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         paidAt: Date.now(),
         user: req.user._id,
     });
+    console.log("lpppppppplp");
 
     // Update product stock asynchronously for each order item
     await Promise.all(order.orderItems.map(async (item) => {
