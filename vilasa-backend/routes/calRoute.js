@@ -46,8 +46,7 @@ router.get('/total-users', async (req, res) => {
 router.get('/category-wise-product-count', dashboardController.categoryWiseProductCount);
 
 // Route to get sales data by year and month
-router.get('/sales-data/:year/:month', dashboardController.getSalesDataByYearAndMonth);
-
+router.route('/sales/data').get(dashboardController.getSalesDataByYearAndMonth);
 // Route to get total sales by category
 router.get('/total-sales-by-category', dashboardController.getTotalSalesByCategory);
 

@@ -79,91 +79,105 @@ exports.categoryWiseProductCount = async (req, res, next) => {
   }
 };
 exports.getSalesDataByYearAndMonth = async (req, res) => {
-  try {
-      const { year, month } = req.params;
-
-      // Calculate the start date dynamically based on the current date
+    try {
+      // Calculate the current date
       const currentDate = moment();
       const startYear = 2024;
-      const startMonth = 1; // January
       const currentYear = currentDate.year();
       const currentMonth = currentDate.month() + 1; // Moment.js months are zero-indexed
-
-      // Check if the requested year and month are valid
-      if (parseInt(year) < startYear || (parseInt(year) === startYear && parseInt(month) < startMonth)) {
-          return res.status(400).json({ error: 'Invalid year or month' });
-      }
-
-      // Query the database to get sales data for the specified year and month
-      const salesData = await Order.aggregate([
-          {
+  
+      // Initialize an array to hold the sales data
+      const salesData = [];
+  
+      // Loop through each year from the start year to the current year
+      for (let year = startYear; year <= currentYear; year++) {
+        // Determine the end month for the current year
+        const endMonth = year === currentYear ? currentMonth : 12;
+  
+        // Loop through each month of the current year
+        for (let month = 1; month <= endMonth; month++) {
+          // Query the database to get sales data for the specified year and month
+          const monthlySalesData = await Order.aggregate([
+            {
               $match: {
-                  $expr: {
-                      $and: [
-                          { $eq: [{ $year: '$createdAt' }, parseInt(year)] },
-                          { $eq: [{ $month: '$createdAt' }, parseInt(month)] }
-                      ]
-                  }
+                $expr: {
+                  $and: [
+                    { $eq: [{ $year: '$createdAt' }, year] },
+                    { $eq: [{ $month: '$createdAt' }, month] }
+                  ]
+                }
               }
-          },
-          {
+            },
+            {
               $group: {
-                  _id: { $dayOfMonth: '$createdAt' }, // Group by day of the month
-                  totalSales: { $sum: '$totalPrice' } // Calculate total sales for each day
+                _id: { $dayOfMonth: '$createdAt' }, // Group by day of the month
+                totalSales: { $sum: '$totalPrice' } // Calculate total sales for each day
               }
-          },
-          {
+            },
+            {
               $sort: { _id: 1 } // Sort by day of the month
-          }
-      ]);
-
-      // Prepare the response
-      const formattedSalesData = salesData.map(item => ({
-          day: item._id,
-          totalSales: item.totalSales
-      }));
-
-      res.status(200).json(formattedSalesData);
-  } catch (error) {
+            }
+          ]);
+  
+          // Format the sales data for the response
+          const formattedMonthlySalesData = monthlySalesData.map(item => ({
+            day: item._id,
+            totalSales: item.totalSales
+          }));
+  
+          // Add the sales data for the current month to the sales data array
+          salesData.push({
+            year,
+            month,
+            sales: formattedMonthlySalesData
+          });
+        }
+      }
+  
+      res.status(200).json(salesData);
+    } catch (error) {
       console.error('Error fetching sales data:', error);
       res.status(500).json({ error: 'Internal server error' });
-  }
-};
+    }
+  };
 // Controller function to fetch total sales data by category
 exports.getTotalSalesByCategory = async (req, res) => {
-  try {
+    try {
       // Query the database to retrieve all orders
       const orders = await Order.find().populate('orderItems.productId');
-
+  
       // Process the retrieved data to calculate the total sales for each category
       const categorySales = {};
-      orders.forEach(order => {
-          order.orderItems.forEach(item => {
-              const category = item.productId.category; // Assuming each product has a 'category' field
-              const quantity = item.quantity;
-              if (!categorySales[category]) {
-                  categorySales[category] = 0;
-              }
-              categorySales[category] += quantity;
-          });
-      });
-
+      for (const order of orders) {
+        for (const item of order.orderItems) {
+          const product = item.productId;
+          if (product && product.category) {
+            const category = product.category.toString();
+            const quantity = item.quantity;
+            if (!categorySales[category]) {
+              categorySales[category] = 0;
+            }
+            categorySales[category] += quantity;
+          }
+        }
+      }
+  
       // Prepare the data for the pie chart format
       const pieChartData = [];
       for (const category in categorySales) {
-          pieChartData.push({
-              category: category,
-              totalSales: categorySales[category]
-          });
+        pieChartData.push({
+          category,
+          totalSales: categorySales[category],
+        });
       }
-
+  
       // Send the pie chart data as the response
       res.status(200).json(pieChartData);
-  } catch (error) {
+    } catch (error) {
       console.error('Error fetching total sales data by category:', error);
       res.status(500).json({ error: 'Internal server error' });
-  }
-};
+    }
+  };
 
 // Controller function to calculate total revenue
 exports.getTotalRevenue = async (req, res) => {
