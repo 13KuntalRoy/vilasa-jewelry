@@ -36,7 +36,12 @@ const {
     getReviewsForLandingPage,
     getAllProductReviews,
     deleteProductImage,
-    updateProductReview
+    updateProductReview,
+    addProductImage,
+    addProductSpecification,
+    deleteProductSpecification,
+    addProductHighlight,
+    deleteProductHighlight
 } = require('../controllers/productController');
 
 // Routes for products
@@ -140,6 +145,24 @@ router.route('/allreviews')
 router.route('/products/:productId/reviews/:reviewId')
   .put(updateProductReview)
 
+// Add Image to Product
+router.route('/product/:id/image')
+    .put(addProductImage);
 
+// Add Specification to Product
+router.route('/product/:id/specification')
+    .put(addProductSpecification);
+
+// Delete Specification from Product
+router.route('/product/:id/specification/:specId')
+    .delete(deleteProductSpecification);
+
+// Add Highlight to Product
+router.route('/product/:id/highlight')
+    .put(addProductHighlight);
+
+// Delete Highlight from Product
+router.route('/product/:id/highlight/:highlight')
+    .delete(deleteProductHighlight);
 
 module.exports = router;

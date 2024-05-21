@@ -1,51 +1,60 @@
 const express = require('express');
 const router = express.Router();
-const {
-  getTotalSalesAmount,
-  getTotalOrders,
-  getTotalProducts,
-  getTotalUsers
-} = require('../controllers/calController'); // Update this with the path to your controller file
+const dashboardController = require('../controllers/calController');
 
-// Define routes using router.route()
-router.route('/total-sales-amount')
-  .get(async (req, res) => {
-    try {
-      const totalSalesAmount = await getTotalSalesAmount();
-      res.json({ totalSalesAmount });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+// Route to get total sales amount
+router.get('/total-sales-amount', async (req, res) => {
+  try {
+    const totalSalesAmount = await dashboardController.getTotalSalesAmount();
+    res.json({ totalSalesAmount });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-router.route('/total-orders')
-  .get(async (req, res) => {
-    try {
-      const totalOrders = await getTotalOrders();
-      res.json({ totalOrders });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+// Route to get total number of orders
+router.get('/total-orders', async (req, res) => {
+  try {
+    const totalOrders = await dashboardController.getTotalOrders();
+    res.json({ totalOrders });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-router.route('/total-products')
-  .get(async (req, res) => {
-    try {
-      const totalProducts = await getTotalProducts();
-      res.json({ totalProducts });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+// Route to get total number of products
+router.get('/total-products', async (req, res) => {
+  try {
+    const totalProducts = await dashboardController.getTotalProducts();
+    res.json({ totalProducts });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
 
-router.route('/total-users')
-  .get(async (req, res) => {
-    try {
-      const totalUsers = await getTotalUsers();
-      res.json({ totalUsers });
-    } catch (error) {
-      res.status(500).json({ error: 'Internal Server Error' });
-    }
-  });
+// Route to get total number of users
+router.get('/total-users', async (req, res) => {
+  try {
+    const totalUsers = await dashboardController.getTotalUsers();
+    res.json({ totalUsers });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Route to get category-wise product count
+router.get('/category-wise-product-count', dashboardController.categoryWiseProductCount);
+
+// Route to get sales data by year and month
+router.get('/sales-data/:year/:month', dashboardController.getSalesDataByYearAndMonth);
+
+// Route to get total sales by category
+router.get('/total-sales-by-category', dashboardController.getTotalSalesByCategory);
+
+// Route to get total revenue
+router.get('/total-revenue', dashboardController.getTotalRevenue);
+
+// Route to get total return
+router.get('/total-return', dashboardController.getTotalReturn);
 
 module.exports = router;

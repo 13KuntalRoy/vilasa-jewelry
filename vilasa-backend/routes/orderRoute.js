@@ -6,7 +6,7 @@ router.route('/new').post(isAuthenticatedUser, orderController.newOrder);
 router.route('/:id/return').post(isAuthenticatedUser, orderController.initiateReturn);
 router.route('/:id/return/process').put(isAuthenticatedUser, orderController.processReturn);
 router.route('/:id').get(isAuthenticatedUser, orderController.getSingleOrderDetails);
-router.route('/myorders').get(isAuthenticatedUser, orderController.myOrders);
+router.route('/myorders/order').get(isAuthenticatedUser, orderController.myOrders);
 router.route('/admin/all').get(isAuthenticatedUser, authorizeRoles ('admin'), orderController.getAllOrders);
 router.route('/admin/update/:id').put(isAuthenticatedUser, authorizeRoles ('admin'), orderController.updateOrder);
 router.route('/admin/delete/:id').delete(isAuthenticatedUser, authorizeRoles ('admin'), orderController.deleteOrder);

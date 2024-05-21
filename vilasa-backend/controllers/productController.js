@@ -6,6 +6,7 @@ const ErrorHandler = require("../utils/errorHandler");
 const asyncErrorHandler = require("../middleware/asyncErrorHandler");
 const SearchFeatures = require("../utils/searchFeatures");
 const cloudinary = require("cloudinary");
+const productModel = require('../model/productModel');
 
 
 /**
@@ -141,7 +142,49 @@ exports.getAllProductsAdmin = asyncErrorHandler(async (req, res) => {
     products,
   });
 });
+// Add Image to Product
+exports.addProductImage = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const images =  req.files ? req.files.images || [] : [];
 
+      if (! images) {
+          return res.status(400).json({ success: false, message: 'No files uploaded' });
+      }
+
+      // Upload each file to Cloudinary and get the URLs
+      const uploadPromises = images.map(async(image) => 
+          cloudinary.uploader.upload(image.tempFilePath, { folder: 'products' })
+      );
+
+      const uploadResults = await Promise.all(uploadPromises);
+
+      const image = uploadResults.map(result => ({
+          public_id: result.public_id,
+          url: result.secure_url
+      }));
+
+      const product = await productModel.findById(id);
+
+      if (!product) {
+          return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+
+      product.images.push(...image);
+      await product.save();
+
+      res.status(200).json({
+          success: true,
+          data: product
+      });
+  } catch (error) {
+      res.status(500).json({
+          success: false,
+          message: 'Server Error',
+          error: error.message
+      });
+  }
+};
 /**
  * @route   PUT /api/products/:id
  * @desc    Update a product
@@ -211,119 +254,148 @@ exports.getAllProductsAdmin = asyncErrorHandler(async (req, res) => {
 //     next(new ErrorHandler(500, 'An error occurred while updating the product.'));
 //   }
 // });
-exports.updateProduct = async (req, res, next) => {
+exports.updateProduct = async (req, res) => {
   try {
-    // Find the product by ID
-    let product = await ProductModel.findById(req.params.id);
+      const { id } = req.params;
+      const updatedData = req.body;
 
-    // If product is not found, return an error
-    if (!product) {
-      return res.status(404).json({ success: false, message: "Product not found" });
-    }
-
-    // Extract product data based on content type
-    let productData;
-    let images = [];
-    if (req.is('json')) {
-      // JSON request
-      productData = req.body;
-      images = req.files ? req.files.images || [] : [];
-    } else if (req.is('multipart/form-data')) {
-      // Form-data request
-      productData = {
-        discount: req.body.discount,
-        name: req.body.name,
-        description: req.body.description,
-        price: req.body.price,
-        cuttedPrice: req.body.cuttedPrice,
-        category: req.body.category,
-        stock: req.body.stock,
-        warranty: req.body.warranty,
-        ratings: req.body.ratings,
-        numOfReviews: req.body.numOfReviews,
-        offerStartTime: req.body.offerStartTime,
-        offerEndTime: req.body.offerEndTime,
-        brand: req.body.brand,
-        highlights: [],
-        specifications: []
-      };
-      // Process highlights
-      for (let i = 0; req.body[`highlights[${i}]`]; i++) {
-        productData.highlights.push(req.body[`highlights[${i}]`]);
-      }
-      // Process specifications
-      for (let i = 0; req.body[`specifications[${i}][title]`]; i++) {
-        productData.specifications.push({
-          title: req.body[`specifications[${i}][title]`],
-          description: req.body[`specifications[${i}][description]`]
-        });
-      }
-      // Process images
-      images = req.files ? req.files.images || [] : [];
-    }
-
-    // Handle image upload
-    if (images.length > 0) {
-      // Check if old images need to be deleted
-      if (productData.deleteOldImages === 'true') {
-        // Delete existing images from Cloudinary
-        for (let i = 0; i < product.images.length; i++) {
-          await cloudinary.uploader.destroy(product.images[i].public_id);
-        }
-        // Clear the product's images array
-        product.images = [];
+      // Ensure specifications is an array of objects
+      if (updatedData.specifications && !Array.isArray(updatedData.specifications)) {
+          return res.status(400).json({ success: false, message: 'Specifications must be an array of objects' });
       }
 
-      // Upload new images to Cloudinary
-      const uploadedImages = await Promise.all(images.map(async (image) => {
-        const result = await cloudinary.uploader.upload(image.tempFilePath, { folder: 'Products' });
-        return { public_id: result.public_id, url: result.secure_url };
-      }));
+      // Update the product in the database
+      const updatedProduct = await ProductModel.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
 
-      // Add new images to the product's images array
-      product.images.push(...uploadedImages);
-    }
-
-    // Handle specification deletion
-    if (productData.deleteSpecifications === 'true') {
-      // Clear the product's specifications array
-      product.specifications = [];
-    }
-
-    // Update product fields
-    for (let key in productData) {
-      if (productData.hasOwnProperty(key)) {
-        if (key === "highlights" || key === "specifications" || key === "deleteOldImages" || key === "deleteSpecifications") {
-          // Skip these keys as they are already processed
-          continue;
-        } else if (productData[key] === null || productData[key] === undefined) {
-          // Delete fields with null or undefined values
-          delete product[key];
-        } else {
-          // Update fields with new values
-          product[key] = productData[key];
-        }
+      if (!updatedProduct) {
+          return res.status(404).json({ success: false, message: 'Product not found' });
       }
-    }
 
-    // Save the updated product
-    await product.save();
-
-    // Send response with updated product
-    res.status(200).json({
-      success: true,
-      product: product,
-    });
+      res.status(200).json({
+          success: true,
+          data: updatedProduct
+      });
   } catch (error) {
-    // Handle errors
-    console.error(error);
-    next(new ErrorHandler(500, 'An error occurred while updating the product.'));
+      res.status(500).json({
+          success: false,
+          message: 'Server Error',
+          error: error.message
+      });
+  }
+}
+
+
+// Add Specification
+exports.addProductSpecification = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const { title, description } = req.body;
+
+      const product = await productModel.findById(id);
+
+      if (!product) {
+          return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+
+      product.specifications.push({ title, description });
+      await product.save();
+
+      res.status(200).json({
+          success: true,
+          data: product
+      });
+  } catch (error) {
+      res.status(500).json({
+          success: false,
+          message: 'Server Error',
+          error: error.message
+      });
   }
 };
 
+// Delete Specification
+exports.deleteProductSpecification = async (req, res) => {
+  try {
+      const { id, specId } = req.params;
 
+      const product = await Product.findById(id);
 
+      if (!product) {
+          return res.status(404).json({ success: false, message: 'Product not found' });
+      }
 
+      product.specifications = product.specifications.filter(spec => spec._id.toString() !== specId);
+
+      await product.save();
+
+      res.status(200).json({
+          success: true,
+          data: product
+      });
+  } catch (error) {
+      res.status(500).json({
+          success: false,
+          message: 'Server Error',
+          error: error.message
+      });
+  }
+};
+
+// Add Highlight
+exports.addProductHighlight = async (req, res) => {
+  try {
+      const { id } = req.params;
+      const { highlight } = req.body;
+
+      const product = await productModel.findById(id);
+
+      if (!product) {
+          return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+
+      product.highlights.push(highlight);
+      await product.save();
+
+      res.status(200).json({
+          success: true,
+          data: product
+      });
+  } catch (error) {
+      res.status(500).json({
+          success: false,
+          message: 'Server Error',
+          error: error.message
+      });
+  }
+};
+
+// Delete Highlight
+exports.deleteProductHighlight = async (req, res) => {
+  try {
+      const { id, highlight } = req.params;
+
+      const product = await productModel.findById(id);
+
+      if (!product) {
+          return res.status(404).json({ success: false, message: 'Product not found' });
+      }
+
+      product.highlights = product.highlights.filter(h => h !== highlight);
+
+      await product.save();
+
+      res.status(200).json({
+          success: true,
+          data: product
+      });
+  } catch (error) {
+      res.status(500).json({
+          success: false,
+          message: 'Server Error',
+          error: error.message
+      });
+  }
+};
 
 /**
  * @route   DELETE /api/products/:id

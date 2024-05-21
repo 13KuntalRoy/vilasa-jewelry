@@ -1,7 +1,7 @@
 const asyncErrorHandler = require('../middleware/asyncErrorHandler');
 const Order = require('../model/orderModel');
 const Product = require('../model/productModel');
-const { ErrorHandler } = require('../utils/errorHandler');
+const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
 
 /**
@@ -168,6 +168,7 @@ exports.getSingleOrderDetails = asyncErrorHandler(async (req, res, next) => {
 exports.myOrders = asyncErrorHandler(async (req, res, next) => {
     try {
         // Find orders associated with the logged-in user
+        console.log("okkkkk");
         const orders = await Order.find({ user: req.user._id });
 
         // Check if orders exist
@@ -335,9 +336,10 @@ exports.updateReturnStatus = asyncErrorHandler(async (req, res, next) => {
     if (!order.returnInfo) {
         return next(new ErrorHandler("No return initiated for this order", 400));
     }
-
+    console.log("okkkkkk");
     // Update return status
     order.returnInfo.returnStatus = returnStatus;
+    console.log("okkk2");
 
     // If return status is updated to "Approved" or "Rejected", update the order status accordingly
     if (returnStatus === "Approved") {
@@ -347,7 +349,8 @@ exports.updateReturnStatus = asyncErrorHandler(async (req, res, next) => {
     }
 
     // Update payment status
-    order.paymentInfo.success = paymentStatus;
+    console.log(paymentStatus);
+    order.paymentInfo.status= paymentStatus;
 
     await order.save();
 
@@ -393,7 +396,7 @@ exports.processReturn = asyncErrorHandler(async (req, res, next) => {
     }
 
     // Update payment status
-    order.paymentInfo.success = paymentStatus;
+    order.paymentInfo.status = paymentStatus;
 
     await order.save();
 
