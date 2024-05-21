@@ -7,7 +7,6 @@ const moment = require('moment');
 // Controller function to get total sales amount
 exports.getTotalSalesAmount = async () => {
   try {
-    console.log("olllllllllll");
     const orders = await Order.find({}); // Assuming your Order model has a field for total price
     const totalSalesAmount = orders.reduce((acc, order) => acc + order.totalPrice, 0);
     return totalSalesAmount;
@@ -79,67 +78,80 @@ exports.categoryWiseProductCount = async (req, res, next) => {
   }
 };
 exports.getSalesDataByYearAndMonth = async (req, res) => {
-    try {
-      // Calculate the current date
-      const currentDate = moment();
-      const startYear = 2024;
-      const currentYear = currentDate.year();
-      const currentMonth = currentDate.month() + 1; // Moment.js months are zero-indexed
-  
-      // Initialize an array to hold the sales data
-      const salesData = [];
-  
-      // Loop through each year from the start year to the current year
-      for (let year = startYear; year <= currentYear; year++) {
-        // Determine the end month for the current year
-        const endMonth = year === currentYear ? currentMonth : 12;
-  
-        // Loop through each month of the current year
-        for (let month = 1; month <= endMonth; month++) {
-          // Query the database to get sales data for the specified year and month
-          const monthlySalesData = await Order.aggregate([
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: [{ $year: '$createdAt' }, year] },
-                    { $eq: [{ $month: '$createdAt' }, month] }
-                  ]
+  try {
+    // Calculate the current date
+    const currentDate = moment();
+    const startYear = 2024;
+    const currentYear = currentDate.year();
+    const currentMonth = currentDate.month() + 1; // Moment.js months are zero-indexed
+
+    // Initialize an array to hold the sales data
+    const salesData = [];
+
+    // Loop through each year from the start year to the current year
+    for (let year = startYear; year <= currentYear; year++) {
+      // Determine the end month for the current year
+      const endMonth = year === currentYear ? currentMonth : 12;
+
+      // Loop through each month of the current year
+      for (let month = 1; month <= endMonth; month++) {
+        // Query the database to get sales data for the specified year and month
+        const monthlySalesData = await Order.aggregate([
+          {
+            $addFields: {
+              createdAt: {
+                $convert: {
+                  input: "$createdAt",
+                  to: "date",
+                  onError: "$createdAt", // Keep the original value if conversion fails
+                  onNull: "$createdAt"   // Keep the original value if the field is null
                 }
               }
-            },
-            {
-              $group: {
-                _id: { $dayOfMonth: '$createdAt' }, // Group by day of the month
-                totalSales: { $sum: '$totalPrice' } // Calculate total sales for each day
-              }
-            },
-            {
-              $sort: { _id: 1 } // Sort by day of the month
             }
-          ]);
-  
-          // Format the sales data for the response
-          const formattedMonthlySalesData = monthlySalesData.map(item => ({
-            day: item._id,
-            totalSales: item.totalSales
-          }));
-  
-          // Add the sales data for the current month to the sales data array
-          salesData.push({
-            year,
-            month,
-            sales: formattedMonthlySalesData
-          });
-        }
+          },
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: [{ $year: '$createdAt' }, year] },
+                  { $eq: [{ $month: '$createdAt' }, month] }
+                ]
+              }
+            }
+          },
+          {
+            $group: {
+              _id: { $dayOfMonth: '$createdAt' }, // Group by day of the month
+              totalSales: { $sum: '$totalPrice' } // Calculate total sales for each day
+            }
+          },
+          {
+            $sort: { _id: 1 } // Sort by day of the month
+          }
+        ]);
+
+        // Format the sales data for the response
+        const formattedMonthlySalesData = monthlySalesData.map(item => ({
+          day: item._id,
+          totalSales: item.totalSales
+        }));
+
+        // Add the sales data for the current month to the sales data array
+        salesData.push({
+          year,
+          month,
+          sales: formattedMonthlySalesData
+        });
       }
-  
-      res.status(200).json(salesData);
-    } catch (error) {
-      console.error('Error fetching sales data:', error);
-      res.status(500).json({ error: 'Internal server error' });
     }
-  };
+
+    res.status(200).json(salesData);
+  } catch (error) {
+    console.error('Error fetching sales data:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Controller function to fetch total sales data by category
 exports.getTotalSalesByCategory = async (req, res) => {
     try {
