@@ -73,6 +73,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
+    address:{
+      type: String,
+    },
     verificationToken: String,
     verificationTokenExpires: Date,
     // Token for resetting password

@@ -675,7 +675,7 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         }
 
         // Extract fields to update from the request body
-        const { name, email, gender, phone, password } = req.body;
+        const { name, email, gender, phone,address,password } = req.body;
 
 
         const fieldsToUpdate = {};
@@ -683,6 +683,8 @@ exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
         if (email) fieldsToUpdate.email = email;
         if (gender) fieldsToUpdate.gender = gender;
         if (phone) fieldsToUpdate.phone = phone;
+        if (address) fieldsToUpdate.phone = address;
+
 
         // Handle avatar upload if available
         if (req.files) {
