@@ -9,6 +9,7 @@ const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
+const { log } = require('util');
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
@@ -659,81 +660,76 @@ exports.resetPassword = asyncErrorHandler(async (req, res, next) => {
 
 // Update user profile
 exports.updateUserProfile = asyncErrorHandler(async (req, res, next) => {
-    try {
-        // Find the user by ID
-        // console.log("user",req.user.id);
-        // console.log(req.files);
-        const user = await User.findById(req.user.id);
-        const avatar = req.files.avatar
-        if (!user) {
-            return res.status(404).json({ success: false, message: 'User not found.' });
-        }
+  try {
+      // Find the user by ID
+      const user = await User.findById(req.user.id);
+      if (!user) {
+          return res.status(404).json({ success: false, message: 'User not found.' });
+      }
 
-        // Ensure user is authorized to update their own profile
-        if (req.user.id !== user._id.toString()) {
-            return res.status(403).json({ success: false, message: 'Unauthorized to update this profile.' });
-        }
+      // Ensure user is authorized to update their own profile
+      if (req.user.id !== user._id.toString()) {
+          return res.status(403).json({ success: false, message: 'Unauthorized to update this profile.' });
+      }
 
-        // Extract fields to update from the request body
-        const { name, email, gender, phone,address,password } = req.body;
+      // Extract fields to update from the request body
+      const { name, email, gender, phone, address, password } = req.body;
+      const fieldsToUpdate = {};
 
+      if (name) fieldsToUpdate.name = name;
+      if (email) fieldsToUpdate.email = email;
+      if (gender) fieldsToUpdate.gender = gender;
+      if (phone) fieldsToUpdate.phone = phone;
+      if (address) fieldsToUpdate.address = address;
 
-        const fieldsToUpdate = {};
-        if (name) fieldsToUpdate.name = name;
-        if (email) fieldsToUpdate.email = email;
-        if (gender) fieldsToUpdate.gender = gender;
-        if (phone) fieldsToUpdate.phone = phone;
-        if (address) fieldsToUpdate.phone = address;
+      // Handle avatar upload if available
+      if (req.files && req.files.avatar) {
+          const avatar = req.files.avatar;
 
+          // Check if the user has an existing avatar and delete it
+          if (user.avatar && user.avatar.public_id) {
+              await cloudinary.uploader.destroy(user.avatar.public_id);
+          }
 
-        // Handle avatar upload if available
-        if (req.files) {
-            // Check if the user has an existing avatar
-            if (user.avatar && user.avatar.public_id) {
-                // Delete the old avatar picture from Cloudinary
-                await cloudinary.v2.uploader.destroy(user.avatar.public_id);
-            }
-            // console.log("passsssssssssssssssssss");
-            // Upload the new avatar picture
-            const avatarUpload = await cloudinary.v2.uploader.upload(avatar.tempFilePath, {
-                folder: 'avatars',
-                width: 150,
-                crop: 'scale',
-            });
-            // console.log("okkkkkkkkkkkkkkkk",avatarUpload.public_id);
-            fieldsToUpdate.avatar = {
-                public_id: avatarUpload.public_id,
-                url: avatarUpload.secure_url,
-            };
-        }
-        // console.log("hhhhhhhhhhhhhhhhhhhh");
+          // Upload the new avatar picture
+          const avatarUpload = await cloudinary.uploader.upload(avatar.tempFilePath, {
+              folder: 'avatars',
+              width: 150,
+              crop: 'scale',
+          });
 
-        // Handle password update
-        if (password) {
-            // Generate a new salt only if the password has changed
-            const salt = await bcrypt.genSalt(10);
-            const hashedPassword = await bcrypt.hash(password, salt);
-            fieldsToUpdate.password = hashedPassword;
-        }
+          fieldsToUpdate.avatar = {
+              public_id: avatarUpload.public_id,
+              url: avatarUpload.secure_url,
+          };
+      }
 
-        // Update user profile
-        const updatedUser = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
-            new: true,
-            runValidators: true,
-        });
+      // Handle password update
+      if (password) {
+          const salt = await bcrypt.genSalt(10);
+          fieldsToUpdate.password = await bcrypt.hash(password, salt);
+      }
 
-        // Send success response with updated user data
-        sendJWtToken(updatedUser, 200, res);
-    } catch (error) {
-        // Handle any errors
-        // console.error(error);
-        return res.status(500).json({ success: false, message: 'An error occurred while updating user profile.' });
-    }
+      // Update user profile
+      const updatedUser = await User.findByIdAndUpdate(req.user.id, fieldsToUpdate, {
+          new: true,
+          runValidators: true,
+      });
+
+      // Send success response with updated user data
+      sendJWtToken(updatedUser, 200, res);
+  } catch (error) {
+      if (error.code === 11000) {
+          return res.status(400).json({
+              success: false,
+              message: 'Email already exists. Please use a different email.'
+          });
+      }
+
+      console.error(error);
+      return res.status(500).json({ success: false, message: 'An error occurred while updating user profile.' });
+  }
 });
-
-
-
-
 // Admin operations
 
 // Get all users (Admin)
