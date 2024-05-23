@@ -893,12 +893,12 @@ exports.getAllBrands = async (req, res, next) => {
   }
 };
 
+// Function to update a brand
 exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
     const picture = req.files ? req.files.picture : null;
-  // Check if req.files.picture exists
 
     // Find the brand by ID
     let brand = await Brand.findById(id);
@@ -923,7 +923,7 @@ exports.updateBrand = async (req, res, next) => {
       }
 
       // Update brand with new picture URL from Cloudinary
-      brand.picture = result.secure_url;
+      brand.picture = { public_id: result.public_id, url: result.secure_url };
     }
 
     // Save the updated brand
