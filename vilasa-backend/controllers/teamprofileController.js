@@ -4,8 +4,9 @@ const TeamProfile = require('../model/TeamProfile');
 // Create TeamProfile document with avatar
 async function createTeamProfile(req, res) {
   try {
-    const { name, designation, avatar } = req.body;
-    const uploadedImage = await cloudinary.uploader.upload(avatar);
+    const { name, designation } = req.body;
+    const image = req.files.avatar
+    const uploadedImage = await cloudinary.uploader.upload(image.tempFilePath);
     const teamProfile = new TeamProfile({
       name,
       designation,
@@ -26,7 +27,8 @@ async function createTeamProfile(req, res) {
 async function updateTeamProfile(req, res) {
   try {
     const { id } = req.params;
-    const { name, designation, avatar } = req.body;
+    const { name, designation } = req.body;
+    const avatar = req.files.avatar;
     const teamProfile = await TeamProfile.findById(id);
     if (!teamProfile) throw new Error('TeamProfile not found');
     
@@ -34,7 +36,7 @@ async function updateTeamProfile(req, res) {
     await cloudinary.uploader.destroy(teamProfile.avatar.public_id);
 
     // Upload new image
-    const uploadedImage = await cloudinary.uploader.upload(avatar);
+    const uploadedImage = await cloudinary.uploader.upload(avatar.tempFilePath);
 
     // Update TeamProfile document
     teamProfile.name = name;

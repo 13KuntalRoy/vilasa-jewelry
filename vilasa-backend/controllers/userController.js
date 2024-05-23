@@ -9,7 +9,7 @@ const cloudinary = require('cloudinary'); // Import cloudinary for image upload
 const sendJWtToken = require('../utils/JwtToken')
 const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require('google-auth-library'); // Import Google OAuth2 client
-const { log } = require('util');
+
 
 // Configure Google OAuth2 client
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID, process.env.GOOGLE_CLIENT_SECRET);// Configure Facebook OAuth2 strategy with clientID and clientSecret
