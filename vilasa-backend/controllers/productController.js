@@ -1012,7 +1012,7 @@ exports.updateCategory = async (req, res, next) => {
     }
 
     // Check if image is null
-    if (image) {
+    if (image!==null) {
       const result = await cloudinary.v2.uploader.upload(image.tempFilePath, {
         folder: 'category_images'
       });
