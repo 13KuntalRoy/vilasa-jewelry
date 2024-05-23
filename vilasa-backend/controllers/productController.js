@@ -896,43 +896,43 @@ exports.getAllBrands = async (req, res, next) => {
 // Function to update a brand
 exports.updateBrand = async (req, res, next) => {
   try {
-    const { id } = req.params;
-    const { title, description } = req.body;
-    const picture = req.files ? req.files.picture : null;
+      const { id } = req.params;
+      const { title, description } = req.body;
+      const picture = req.files ? req.files.picture : null;
 
-    // Find the brand by ID
-    let brand = await Brand.findById(id);
+      // Find the brand by ID
+      let brand = await Brand.findById(id);
 
-    // Check if brand exists
-    if (!brand) {
-      return res.status(404).json({ success: false, message: 'Brand not found' });
-    }
-
-    // Update brand with new title and description
-    if (title) { brand.title = title };
-    if (description) { brand.description = description };
-
-    // Check if picture file is provided
-    if (picture) {
-      // Upload new picture to Cloudinary with folder specified
-      const result = await cloudinary.v2.uploader.upload(picture.tempFilePath, { folder: 'Brand' });
-
-      // If brand has an old picture, delete it from Cloudinary
-      if (brand.picture && brand.picture.public_id) {
-        await cloudinary.v2.uploader.destroy(brand.picture.public_id);
+      // Check if brand exists
+      if (!brand) {
+          return res.status(404).json({ success: false, message: 'Brand not found' });
       }
 
-      // Update brand with new picture URL from Cloudinary
-      brand.picture = { public_id: result.public_id, url: result.secure_url };
-    }
+      // Update brand with new title and description
+      if (title) { brand.title = title };
+      if (description) { brand.description = description };
 
-    // Save the updated brand
-    await brand.save();
+      // Check if picture file is provided
+      if (picture) {
+          // Upload new picture to Cloudinary with folder specified
+          const result = await cloudinary.uploader.upload(picture.tempFilePath, { folder: 'Brand' });
 
-    // Send response with updated brand
-    res.status(200).json({ success: true, brand });
+          // If brand has an old picture, delete it from Cloudinary
+          if (brand.picture && brand.picture.public_id) {
+              await cloudinary.uploader.destroy(brand.picture.public_id);
+          }
+
+          // Update brand with new picture URL from Cloudinary
+          brand.picture = { public_id: result.public_id, url: result.secure_url };
+      }
+
+      // Save the updated brand
+      await brand.save();
+
+      // Send response with updated brand
+      res.status(200).json({ success: true, brand });
   } catch (error) {
-    next(new ErrorHandler(error.message, 400));
+      next(error); // Pass error to error handling middleware
   }
 };
 
