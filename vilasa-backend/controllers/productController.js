@@ -897,7 +897,8 @@ exports.updateBrand = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title, description } = req.body;
-    const picture = req.files && req.files.picture; // Check if req.files.picture exists
+    const picture = req.files ? req.files.picture : null;
+  // Check if req.files.picture exists
 
     // Find the brand by ID
     let brand = await Brand.findById(id);
