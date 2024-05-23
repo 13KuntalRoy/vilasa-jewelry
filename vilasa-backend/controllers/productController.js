@@ -1002,7 +1002,7 @@ exports.updateCategory = async (req, res, next) => {
   try {
     const { id } = req.params;
     const { title } = req.body;
-    const image = req.files.image;
+    const image = req.files.images;
     let updatedCategory;
 
     const existingCategory = await Category.findById(id);
