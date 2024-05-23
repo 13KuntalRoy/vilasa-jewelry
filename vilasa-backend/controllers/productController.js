@@ -914,13 +914,13 @@ exports.updateBrand = async (req, res, next) => {
 
       // Check if picture file is provided
       if (picture) {
-          // Upload new picture to Cloudinary with folder specified
-          const result = await cloudinary.uploader.upload(picture.tempFilePath, { folder: 'Brand' });
-
           // If brand has an old picture, delete it from Cloudinary
           if (brand.picture && brand.picture.public_id) {
               await cloudinary.uploader.destroy(brand.picture.public_id);
           }
+
+          // Upload new picture to Cloudinary with folder specified
+          const result = await cloudinary.uploader.upload(picture.tempFilePath, { folder: 'Brand' });
 
           // Update brand with new picture URL from Cloudinary
           brand.picture = { public_id: result.public_id, url: result.secure_url };

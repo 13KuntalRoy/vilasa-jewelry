@@ -28,23 +28,31 @@ async function updateTeamProfile(req, res) {
   try {
     const { id } = req.params;
     const { name, designation } = req.body;
-    const avatar = req.files.avatar;
+    
+    let avatar;
+    if (req.files && req.files.avatar) {
+      avatar = req.files.avatar;
+      // Delete previous image from Cloudinary
+      await cloudinary.uploader.destroy(teamProfile.avatar.public_id);
+      // Upload new image
+      const uploadedImage = await cloudinary.uploader.upload(avatar.tempFilePath);
+      avatar = {
+        public_id: uploadedImage.public_id,
+        url: uploadedImage.url
+      };
+    }
+
     const teamProfile = await TeamProfile.findById(id);
     if (!teamProfile) throw new Error('TeamProfile not found');
-    
-    // Delete previous image from Cloudinary
-    await cloudinary.uploader.destroy(teamProfile.avatar.public_id);
-
-    // Upload new image
-    const uploadedImage = await cloudinary.uploader.upload(avatar.tempFilePath);
 
     // Update TeamProfile document
     teamProfile.name = name;
     teamProfile.designation = designation;
-    teamProfile.avatar = {
-      public_id: uploadedImage.public_id,
-      url: uploadedImage.url
-    };
+    
+    // Assign avatar if it exists
+    if (avatar) {
+      teamProfile.avatar = avatar;
+    }
 
     await teamProfile.save();
     res.json({ success: true, message: "Team profile updated successfully" });
