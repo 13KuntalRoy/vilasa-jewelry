@@ -409,7 +409,6 @@ exports.deleteProductHighlight = async (req, res) => {
  */
 exports.deleteProduct = asyncErrorHandler(async (req, res, next) => {
   const productId = req.params.id;
-
   // Find the product by ID
   const product = await ProductModel.findById(productId);
 
@@ -417,14 +416,15 @@ exports.deleteProduct = asyncErrorHandler(async (req, res, next) => {
   if (!product) {
     return next(new ErrorHandler("Product not found", 404));
   }
-
   // Extract product images
   const productImages = product.images || [];
 
   try {
     // Delete images from Cloudinary
     await Promise.all(productImages.map(async (image) => {
-      await cloudinary.v2.uploader.destroy(image.product_id);
+      console.log('Image:', image); 
+      await cloudinary.v2.uploader.destroy(image.public_id);  
+     
     }));
 
     // Remove the product from the database
