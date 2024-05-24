@@ -88,7 +88,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
  */
 exports.getAllProducts = async (req, res) => {
   // Parse and validate the resultPerPage parameter
-  const resultPerPage = parseInt(req.query.resultPerPage) || 6;
+  const resultPerPage = parseInt(req.query.resultPerPage) || 50;
   if (resultPerPage < 1) {
     return res.status(400).json({ success: false, message: "Invalid resultPerPage value" });
   }
@@ -106,10 +106,12 @@ exports.getAllProducts = async (req, res) => {
     // Calculate skip value based on page number and resultPerPage
     const skip = (page - 1) * resultPerPage;
 
-    // Fetch products with pagination
+    // Fetch products with pagination and populate category and brand details
     const products = await ProductModel.find()
       .skip(skip)
-      .limit(resultPerPage);
+      .limit(resultPerPage)
+      .populate('category')
+      .populate('brand');
 
     // Calculate total pages
     const totalPages = Math.ceil(productsCount / resultPerPage);
@@ -135,9 +137,12 @@ exports.getAllProducts = async (req, res) => {
  * @access  Private (Admin)
  */
 exports.getAllProductsAdmin = asyncErrorHandler(async (req, res) => {
-  const products = await ProductModel.find();
+  // Fetch all products and populate category and brand details
+  const products = await ProductModel.find()
+    .populate('category')
+    .populate('brand');
 
-  res.status(200).json({  
+  res.status(200).json({
     success: true,
     products,
   });
@@ -445,15 +450,17 @@ exports.getProductDetails = asyncErrorHandler(async (req, res, next) => {
   try {
     const productId = req.params.id;
 
-    // Find the product by ID
-    const product = await ProductModel.findById(productId);
+    // Find the product by ID and populate category and brand details
+    const product = await ProductModel.findById(productId)
+      .populate('category')
+      .populate('brand');
 
     // Check if the product exists
     if (!product) {
       return next(new ErrorHandler("Product not found", 404));
     }
 
-    // Send success response with product details
+    // Send success response with product details including category and brand
     res.status(200).json({
       success: true,
       product: product,
