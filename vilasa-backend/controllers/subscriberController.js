@@ -52,7 +52,7 @@ exports.downloadSubscribersAsExcel = async (req, res) => {
         if (!allSubscribers || allSubscribers.length === 0) {
             return res.status(404).json({ error: 'No subscribers found' });
         }
-console.log(allSubscribers);
+
         // Add each email to the worksheet
         allSubscribers.forEach(subscriber => {
             subscriber.email.forEach(email => {
@@ -63,6 +63,9 @@ console.log(allSubscribers);
         // Set headers to force download
         res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         res.setHeader('Content-Disposition', 'attachment; filename=subscribers.xlsx');
+
+        // Debug: Log the generated Excel file
+        // console.log('Generated Excel:', workbook);
 
         // Send the Excel file as a response
         await workbook.xlsx.write(res);

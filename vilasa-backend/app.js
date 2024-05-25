@@ -40,8 +40,9 @@ app.use(bodyParser.urlencoded({ limit: "100mb", extended: true, type: 'applicati
 
 
 app.use(fileUpload({
-  useTempFiles : true,
-  tempFileDir : '/tmp/'
+  useTempFiles: true,
+  tempFileDir: '/tmp/',
+  limits: { fileSize: 100 * 1024 * 1024 }, // Set limit to 100MB for file uploads
 })); // Middleware for handling file uploads
 app.use(cors(
   {
