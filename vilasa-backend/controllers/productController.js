@@ -259,35 +259,94 @@ exports.addProductImage = async (req, res) => {
 //     next(new ErrorHandler(500, 'An error occurred while updating the product.'));
 //   }
 // });
-exports.updateProduct = async (req, res) => {
-  try {
-      const { id } = req.params;
-      const updatedData = req.body;
+// exports.updateProduct = async (req, res) => {
+//   try {
+//       const { id } = req.params;
+//       const updatedData = req.body;
 
-      // Ensure specifications is an array of objects
-      if (updatedData.specifications && !Array.isArray(updatedData.specifications)) {
-          return res.status(400).json({ success: false, message: 'Specifications must be an array of objects' });
-      }
+//       // Ensure specifications is an array of objects
+//       if (updatedData.specifications && !Array.isArray(updatedData.specifications)) {
+//           return res.status(400).json({ success: false, message: 'Specifications must be an array of objects' });
+//       }
 
-      // Update the product in the database
-      const updatedProduct = await ProductModel.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
+//       // Update the product in the database
+//       const updatedProduct = await ProductModel.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
 
-      if (!updatedProduct) {
-          return res.status(404).json({ success: false, message: 'Product not found' });
-      }
+//       if (!updatedProduct) {
+//           return res.status(404).json({ success: false, message: 'Product not found' });
+//       }
 
-      res.status(200).json({
-          success: true,
-          data: updatedProduct
-      });
-  } catch (error) {
-      res.status(500).json({
-          success: false,
-          message: 'Server Error',
-          error: error.message
-      });
+//       res.status(200).json({
+//           success: true,
+//           data: updatedProduct
+//       });
+//   } catch (error) {
+//       res.status(500).json({
+//           success: false,
+//           message: 'Server Error',
+//           error: error.message
+//       });
+//   }
+// }
+// @desc    Update product
+// @route   PUT /api/v1/products/:id
+// @access  Private/Admin
+exports.updateProduct = asyncHandler(async (req, res, next) => {
+  let product = await Product.findById(req.params.id);
+
+  if (!product) {
+    return next(new ErrorResponse(`Product not found with id of ${req.params.id}`, 404));
   }
-}
+
+  // Prepare update data
+  const updateData = req.body;
+
+  // If there are fields to unset (remove), handle them separately
+  if (updateData.$unset) {
+    await Product.updateOne({ _id: req.params.id }, { $unset: updateData.$unset });
+    delete updateData.$unset; // Remove $unset from updateData to avoid conflicts
+  }
+
+  // Handle specifications update and addition
+  if (updateData.specifications) {
+    updateData.specifications.forEach(newSpec => {
+      const existingSpecIndex = product.specifications.findIndex(spec => spec.title === newSpec.title);
+      if (existingSpecIndex >= 0) {
+        product.specifications[existingSpecIndex] = newSpec; // Update existing spec
+      } else {
+        product.specifications.push(newSpec); // Add new spec
+      }
+    });
+  }
+
+  // Handle specifications removal by title or ID
+  if (updateData.removeSpecifications) {
+    updateData.removeSpecifications.forEach(specToRemove => {
+      product.specifications = product.specifications.filter(spec => 
+        spec.title !== specToRemove.title && spec._id.toString() !== specToRemove._id
+      );
+    });
+  }
+
+  // Handle highlights removal
+  if (updateData.removeHighlights) {
+    product.highlights = product.highlights.filter(highlight => !updateData.removeHighlights.includes(highlight));
+  }
+
+  // Update the remaining product fields
+  for (const key in updateData) {
+    if (key !== 'specifications' && key !== 'removeSpecifications' && key !== 'removeHighlights') {
+      product[key] = updateData[key];
+    }
+  }
+
+  await product.save();
+
+  res.status(200).json({
+    success: true,
+    data: product
+  });
+});
 
 
 // Add Specification
