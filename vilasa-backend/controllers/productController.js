@@ -291,7 +291,7 @@ exports.addProductImage = async (req, res) => {
 // @desc    Update product
 // @route   PUT /api/v1/products/:id
 // @access  Private/Admin
-exports.updateProduct = asyncHandler(async (req, res, next) => {
+exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
   let product = await Product.findById(req.params.id);
 
   if (!product) {
