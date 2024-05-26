@@ -292,7 +292,7 @@ exports.addProductImage = async (req, res) => {
 // @route   PUT /api/v1/products/:id
 // @access  Private/Admin
 exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
-  let product = await Product.findById(req.params.id);
+  let product = await ProductModel.findById(req.params.id);
 
   if (!product) {
     return next(new ErrorResponse(`Product not found with id of ${req.params.id}`, 404));
@@ -303,7 +303,7 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
 
   // If there are fields to unset (remove), handle them separately
   if (updateData.$unset) {
-    await Product.updateOne({ _id: req.params.id }, { $unset: updateData.$unset });
+    await ProductModel.updateOne({ _id: req.params.id }, { $unset: updateData.$unset });
     delete updateData.$unset; // Remove $unset from updateData to avoid conflicts
   }
 
