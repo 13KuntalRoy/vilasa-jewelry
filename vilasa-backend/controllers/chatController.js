@@ -7,12 +7,14 @@ const createChatMessage = asyncHandler(async (req, res) => {
   const { receiver, enquiry, message } = req.body;
   const sender = req.user._id;
   const senderRole = req.user.role;
-  const picture = req.files?.picture; // Optional chaining in case req.files is undefined
+  const picture = req.files ? req.files.picture : null; // Check if req.files exists and get picture if available
 
   console.log(req.user);
 
-  // If picture is included in the request body, upload it to Cloudinary
+  // Initialize pictureUrl to null
   let pictureUrl = null;
+
+  // If picture is included in the request body, upload it to Cloudinary
   if (picture) {
     try {
       const result = await cloudinary.uploader.upload(picture.tempFilePath, { folder: 'chat_images' });
@@ -32,6 +34,7 @@ const createChatMessage = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Internal server error.' });
   }
 });
+
 // Get all chat messages for a specific enquiry
 const getEnquiryChatMessages = asyncHandler(async (req, res) => {
   const { enquiryId } = req.params;
