@@ -3,15 +3,13 @@ const asyncHandler =  require('../middleware/asyncErrorHandler');
 const cloudinary = require('cloudinary').v2;
 
 
-// Create a new chat message with optional image upload
 const createChatMessage = asyncHandler(async (req, res) => {
-  const { receiver, enquiry, message} = req.body;
+  const { receiver, enquiry, message } = req.body;
   const sender = req.user._id;
   const senderRole = req.user.role;
-  const  picture = req.files.picture;
+  const picture = req.files?.picture; // Optional chaining in case req.files is undefined
 
   console.log(req.user);
-
 
   // If picture is included in the request body, upload it to Cloudinary
   let pictureUrl = null;
@@ -26,7 +24,7 @@ const createChatMessage = asyncHandler(async (req, res) => {
   }
 
   try {
-    // Create the chat message with the Cloudinary image URL
+    // Create the chat message with the Cloudinary image URL (if any)
     const newChat = await Chat.create({ sender, receiver, enquiry, message, senderRole, picture: pictureUrl });
     res.status(201).json(newChat);
   } catch (error) {
@@ -34,7 +32,6 @@ const createChatMessage = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Internal server error.' });
   }
 });
-
 // Get all chat messages for a specific enquiry
 const getEnquiryChatMessages = asyncHandler(async (req, res) => {
   const { enquiryId } = req.params;
