@@ -140,16 +140,10 @@ async function sendReturnConfirmationEmail(email, orderId, userName) {
  */
 exports.getSingleOrderDetails = asyncErrorHandler(async (req, res, next) => {
     try {
-        // Retrieve order details and populate user information and order items with product details
+        // Retrieve order details and populate user information
         const order = await Order.findById(req.params.id)
-            .populate("user", "name email")
-            .populate({
-                path: "orderItems",
-                populate: {
-                    path: "product",
-                    model: "Product",
-                },
-            });
+            .populate("user")
+            .populate({path: "orderItems.productId",})
 
         // Check if order exists
         if (!order) {
