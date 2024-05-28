@@ -133,7 +133,6 @@ async function sendReturnConfirmationEmail(email, orderId, userName) {
         message: `Dear ${userName}, your return request for order with ID ${orderId} has been successfully initiated.`,
     });
 }
-
 /**
  * @desc    Get details of a single order
  * @route   GET /api/orders/:id
@@ -141,8 +140,16 @@ async function sendReturnConfirmationEmail(email, orderId, userName) {
  */
 exports.getSingleOrderDetails = asyncErrorHandler(async (req, res, next) => {
     try {
-        // Retrieve order details and populate user information
-        const order = await Order.findById(req.params.id).populate("user", "name email");
+        // Retrieve order details and populate user information and order items with product details
+        const order = await Order.findById(req.params.id)
+            .populate("user", "name email")
+            .populate({
+                path: "orderItems",
+                populate: {
+                    path: "product",
+                    model: "Product",
+                },
+            });
 
         // Check if order exists
         if (!order) {
