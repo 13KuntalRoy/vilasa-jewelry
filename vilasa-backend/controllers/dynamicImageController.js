@@ -50,7 +50,7 @@ exports.getDynamicImages = asyncErrorHandler(async (req, res, next) => {
 // @route   GET /api/dynamic-images/:id
 // @access  Public
 exports.getDynamicImage = asyncErrorHandler(async (req, res, next) => {
-  const dynamicImage = await DynamicImage.findById(req.params.id);
+  const dynamicImage = await DynamicImage.findById(req.params.id).populate('url');
   if (!dynamicImage) {
     return res.status(404).json({
       success: false,
@@ -62,7 +62,6 @@ exports.getDynamicImage = asyncErrorHandler(async (req, res, next) => {
     data: dynamicImage,
   });
 });
-
 // @desc    Update dynamic image
 // @route   PUT /api/dynamic-images/:id
 // @access  Admin
@@ -117,7 +116,7 @@ exports.updateDynamicImage = asyncErrorHandler(async (req, res, next) => {
 // @access  Public
 exports.getDynamicImagesByGroup = asyncErrorHandler(async (req, res, next) => {
   const { group } = req.params;
-  const dynamicImages = await DynamicImage.find({ group });
+  const dynamicImages = await DynamicImage.find({ group }).populate('url');
 
   if (!dynamicImages || dynamicImages.length === 0) {
     return res.status(404).json({
