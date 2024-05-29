@@ -38,7 +38,7 @@ exports.uploadDynamicImage = asyncErrorHandler(async (req, res, next) => {
 // @route   GET /api/dynamic-images
 // @access  Public
 exports.getDynamicImages = asyncErrorHandler(async (req, res, next) => {
-  const dynamicImages = await DynamicImage.find();
+  const dynamicImages = await DynamicImage.find().populate('url');
   res.status(200).json({
     success: true,
     count: dynamicImages.length,
@@ -62,6 +62,7 @@ exports.getDynamicImage = asyncErrorHandler(async (req, res, next) => {
     data: dynamicImage,
   });
 });
+
 // @desc    Update dynamic image
 // @route   PUT /api/dynamic-images/:id
 // @access  Admin
