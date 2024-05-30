@@ -1423,3 +1423,32 @@ exports.deleteReviewById = async (req, res, next) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 };
+// Update showOnLandingPage value by review ID
+exports.updateShowOnLandingPage = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+    const { showOnLandingPage } = req.body;
+
+    // Find the product that contains the review
+    const product = await Product.findOne({ 'reviews._id': reviewId });
+    if (!product) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Find the review in the reviews array
+    const review = product.reviews.id(reviewId);
+    if (!review) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Update the showOnLandingPage value
+    review.showOnLandingPage = showOnLandingPage;
+
+    // Save the updated product
+    await product.save();
+
+    res.status(200).json({ message: 'showOnLandingPage value updated successfully' });
+  } catch (error) {
+    console.error('Error updating showOnLandingPage:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }

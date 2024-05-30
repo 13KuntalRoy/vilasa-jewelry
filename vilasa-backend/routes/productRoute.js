@@ -42,7 +42,8 @@ const {
     deleteProductSpecification,
     addProductHighlight,
     deleteProductHighlight,
-    deleteReviewById
+    deleteReviewById,
+    updateShowOnLandingPage
 } = require('../controllers/productController');
 
 // Routes for products
@@ -167,5 +168,5 @@ router.route('/product/:id/highlight/:highlight')
     .delete(deleteProductHighlight);
 
 router.delete('/review/:reviewId', isAuthenticatedUser,authorizeRoles('admin'), deleteReviewById);
-
+router.put('/review/:reviewId/showOnLandingPage', isAuthenticatedUser, authorizeRoles('admin'), updateShowOnLandingPage);
 module.exports = router;
