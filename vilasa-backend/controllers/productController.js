@@ -1430,7 +1430,7 @@ exports.updateShowOnLandingPage = async (req, res, next) => {
     const { showOnLandingPage } = req.body;
 
     // Find the product that contains the review
-    const product = await Product.findOne({ 'reviews._id': reviewId });
+    const product = await  ProductModel.findOne({ 'reviews._id': reviewId });
     if (!product) {
       return res.status(404).json({ message: 'Review not found' });
     }
