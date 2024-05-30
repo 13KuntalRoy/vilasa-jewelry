@@ -41,7 +41,8 @@ const {
     addProductSpecification,
     deleteProductSpecification,
     addProductHighlight,
-    deleteProductHighlight
+    deleteProductHighlight,
+    deleteReviewById
 } = require('../controllers/productController');
 
 // Routes for products
@@ -164,5 +165,7 @@ router.route('/product/:id/highlight')
 // Delete Highlight from Product
 router.route('/product/:id/highlight/:highlight')
     .delete(deleteProductHighlight);
+
+router.delete('/review/:reviewId', isAuthenticatedUser,authorizeRoles('admin'), deleteReviewById);
 
 module.exports = router;

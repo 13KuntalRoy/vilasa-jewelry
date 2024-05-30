@@ -1388,3 +1388,38 @@ exports.updateProductReview = async (req, res, next) => {
     res.status(500).json({ success: false, message: 'Failed to update review' });
   }
 };
+// Delete review by review ID
+exports.deleteReviewById = async (req, res, next) => {
+  try {
+    const { reviewId } = req.params;
+
+    // Find the product that contains the review
+    const product = await Product.findOne({ 'reviews._id': reviewId });
+    if (!product) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Find the review index in the reviews array
+    const reviewIndex = product.reviews.findIndex(review => review._id.toString() === reviewId);
+    if (reviewIndex === -1) {
+      return res.status(404).json({ message: 'Review not found' });
+    }
+
+    // Remove the review from the reviews array
+    product.reviews.splice(reviewIndex, 1);
+
+    // Update the number of reviews and ratings
+    product.numOfReviews = product.reviews.length;
+    product.ratings = product.reviews.length
+      ? product.reviews.reduce((acc, review) => acc + review.rating, 0) / product.reviews.length
+      : 0;
+
+    // Save the updated product
+    await product.save();
+
+    res.status(200).json({ message: 'Review deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting review:', error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
