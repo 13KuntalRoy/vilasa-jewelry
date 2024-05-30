@@ -1451,4 +1451,4 @@ exports.updateShowOnLandingPage = async (req, res, next) => {
   } catch (error) {
     console.error('Error updating showOnLandingPage:', error);
     res.status(500).json({ message: 'Internal server error' });
-  }
+  }};
