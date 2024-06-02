@@ -32,8 +32,9 @@ async function updateTeamProfile(req, res) {
     let avatar;
     if (req.files && req.files.avatar) {
       avatar = req.files.avatar;
+      const teamProfile = await TeamProfile.findById(id);
       // Delete previous image from Cloudinary
-      await cloudinary.uploader.destroy(TeamProfile.avatar.public_id);
+      await cloudinary.uploader.destroy(teamProfile.avatar.public_id);
       // Upload new image
       const uploadedImage = await cloudinary.uploader.upload(avatar.tempFilePath);
       avatar = {
