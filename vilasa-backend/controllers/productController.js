@@ -1320,7 +1320,7 @@ exports.getAllProductReviews = async (req, res) => {
     const products = await ProductModel.find({}, 'name reviews')
       .populate({
         path: 'reviews.user',
-        select: 'name email' // Select the fields you want from the user model
+        select: 'name email avatar' // Select the fields you want from the user model
       });
 
     // Extract reviews from the products
