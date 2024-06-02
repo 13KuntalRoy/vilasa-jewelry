@@ -1296,13 +1296,43 @@ exports.getReviewsForLandingPage = asyncErrorHandler(async (req, res, next) => {
  * @desc    Get all product reviews
  * @access  Public
  */
+// exports.getAllProductReviews = async (req, res) => {
+//   try {
+//     // Find all products and select only the 'reviews' field
+//     const reviews = await ProductModel.find({}, 'reviews');
+
+//     // Extract reviews from the products
+//     const allReviews = reviews.reduce((accumulator, current) => accumulator.concat(current.reviews), []);
+
+//     // Send success response with all reviews
+//     res.status(200).json({
+//       success: true,
+//       reviews: allReviews,
+//     });
+//   } catch (error) {
+//     // Handle any errors that occur
+//     res.status(500).json({ success: false, message: 'Failed to fetch all product reviews' });
+//   }
+// };
 exports.getAllProductReviews = async (req, res) => {
   try {
-    // Find all products and select only the 'reviews' field
-    const reviews = await ProductModel.find({}, 'reviews');
+    // Find all products and populate the 'user' field in reviews
+    const products = await ProductModel.find({}, 'name reviews')
+      .populate({
+        path: 'reviews.user',
+        select: 'name email' // Select the fields you want from the user model
+      });
 
     // Extract reviews from the products
-    const allReviews = reviews.reduce((accumulator, current) => accumulator.concat(current.reviews), []);
+    const allReviews = products.reduce((accumulator, product) => {
+      const productReviews = product.reviews.map(review => ({
+        productId: product._id,
+        productName: product.name,
+        review: review,
+        user: review.user // Populated user info
+      }));
+      return accumulator.concat(productReviews);
+    }, []);
 
     // Send success response with all reviews
     res.status(200).json({
@@ -1314,7 +1344,6 @@ exports.getAllProductReviews = async (req, res) => {
     res.status(500).json({ success: false, message: 'Failed to fetch all product reviews' });
   }
 };
-
 exports.deleteProductImage = async (productId, imageId) => {
   try {
     const product = await ProductModel.findById(productId);
