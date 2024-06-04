@@ -113,8 +113,13 @@ const productSchema = new mongoose.Schema({
   // Product warranty
   warranty: {
     type: Number,
-    default: 1,
-    // Explanation: Warranty period for the product. Default value is 1 year.
+    default: 0,
+    // Explanation: Warranty period for the product. Default value is 0 year.
+  },
+  productweight:{
+    type: Number,
+    default: 0,
+    // Explanation: Weight of the product. Default value is 0.
   },
 
   // Product ratings
