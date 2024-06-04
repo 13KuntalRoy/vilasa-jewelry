@@ -56,4 +56,6 @@ router.get('/total-revenue', dashboardController.getTotalRevenue);
 // Route to get total return
 router.get('/total-return', dashboardController.getTotalReturn);
 
+// Route to get year and month-wise sales and return data
+router.route('/sales-returns').get(dashboardController.getSalesAndReturnsByYearAndMonth);
 module.exports = router;

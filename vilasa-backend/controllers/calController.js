@@ -232,3 +232,77 @@ exports.getTotalReturn = async (req, res) => {
       res.status(500).json({ error: 'Internal server error' });
   }
 };
+exports.getSalesAndReturnsByYearAndMonth = async (req, res) => {
+  try {
+      // Calculate the current date
+      const currentDate = moment();
+      const startYear = 2024;
+      const currentYear = currentDate.year();
+      const currentMonth = currentDate.month() + 1; // Moment.js months are zero-indexed
+
+      // Initialize an array to hold the sales and returns data
+      const data = [];
+
+      // Loop through each year from the start year to the current year
+      for (let year = startYear; year <= currentYear; year++) {
+          // Determine the end month for the current year
+          const endMonth = year === currentYear ? currentMonth : 12;
+
+          // Loop through each month of the current year
+          for (let month = 1; month <= endMonth; month++) {
+              // Query the database to get sales and returns data for the specified year and month
+              const monthlyData = await Order.aggregate([
+                  {
+                      $addFields: {
+                          createdAt: {
+                              $convert: {
+                                  input: "$createdAt",
+                                  to: "date",
+                                  onError: "$createdAt", // Keep the original value if conversion fails
+                                  onNull: "$createdAt"   // Keep the original value if the field is null
+                              }
+                          }
+                      }
+                  },
+                  {
+                      $match: {
+                          $expr: {
+                              $and: [
+                                  { $eq: [{ $year: '$createdAt' }, year] },
+                                  { $eq: [{ $month: '$createdAt' }, month] }
+                              ]
+                          }
+                      }
+                  },
+                  {
+                      $group: {
+                          _id: null,
+                          totalSales: { $sum: '$totalPrice' }, // Calculate total sales
+                          totalReturns: {
+                              $sum: {
+                                  $cond: [{ $eq: ['$returnInfo.returnStatus', 'Processed'] }, '$totalPrice', 0]
+                              }
+                          } // Calculate total returns
+                      }
+                  }
+              ]);
+
+              // Format the data for the response
+              const formattedData = {
+                  year,
+                  month,
+                  totalSales: monthlyData.length > 0 ? monthlyData[0].totalSales : 0,
+                  totalReturns: monthlyData.length > 0 ? monthlyData[0].totalReturns : 0
+              };
+
+              // Add the data for the current month to the array
+              data.push(formattedData);
+          }
+      }
+
+      res.status(200).json(data);
+  } catch (error) {
+      console.error('Error fetching sales and returns data:', error);
+      res.status(500).json({ error: 'Internal server error' });
+  }
+};
