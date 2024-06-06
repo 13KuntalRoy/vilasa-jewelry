@@ -108,5 +108,32 @@ const getEnquiryById = async (req, res, next) => {
   }
 };
 
+const updateEnquiryStatus = async (req, res, next) => {
+  const { enquiryId } = req.params;
+  const { status } = req.body;
+
+  try {
+    // Validate the status value
+    if (!['open', 'closed', 'pending'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status value.' });
+    }
+
+    // Find the enquiry by ID and update the status
+    const updatedEnquiry = await Enquiry.findByIdAndUpdate(enquiryId, { status }, { new: true });
+
+    if (!updatedEnquiry) {
+      return res.status(404).json({ success: false, message: 'Enquiry not found.' });
+    }
+
+    // Respond with the updated enquiry
+    res.status(200).json({ success: true, data: updatedEnquiry });
+  } catch (error) {
+    // Handle errors
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Internal server error.' });
+  }
+};
+
+
 module.exports = { createEnquiry, getAllEnquiries, getOwnEnquiries, deleteEnquiry, getEnquiryById };
 

@@ -14,4 +14,6 @@ router.route('/enquiries/:enquiryId')
     .delete(isAuthenticatedUser, deleteEnquiry)
     .get(isAuthenticatedUser, getEnquiryById);
 
+router.route('/:enquiryId/status').put(updateEnquiryStatus);
+
 module.exports = router;
