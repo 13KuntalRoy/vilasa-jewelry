@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { isAuthenticatedUser } = require('../middleware/auth');
-const { createEnquiry, getAllEnquiries, getOwnEnquiries,deleteEnquiry, getEnquiryById } = require('../controllers/enquiryController');
+const { createEnquiry, getAllEnquiries, getOwnEnquiries,deleteEnquiry, getEnquiryById,updateEnquiryStatus } = require('../controllers/enquiryController');
 
 router.route('/enquiries')
     .post(isAuthenticatedUser, createEnquiry) // Route for creating a new enquiry
@@ -13,7 +13,8 @@ router.route('/enquiries/own')
 router.route('/enquiries/:enquiryId')
     .delete(isAuthenticatedUser, deleteEnquiry)
     .get(isAuthenticatedUser, getEnquiryById);
-
 router.route('/:enquiryId/status').put(updateEnquiryStatus);
+
+
 
 module.exports = router;

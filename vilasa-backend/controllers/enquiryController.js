@@ -135,5 +135,5 @@ const updateEnquiryStatus = async (req, res, next) => {
 };
 
 
-module.exports = { createEnquiry, getAllEnquiries, getOwnEnquiries, deleteEnquiry, getEnquiryById };
+module.exports = { createEnquiry, getAllEnquiries, getOwnEnquiries, deleteEnquiry, getEnquiryById,updateEnquiryStatus };
 
