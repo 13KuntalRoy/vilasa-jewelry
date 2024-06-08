@@ -1,22 +1,126 @@
 const asyncErrorHandler = require('../middleware/asyncErrorHandler');
 const Order = require('../model/orderModel');
+const Coupon = require('../model/Coupon');
 const Product = require('../model/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
+exports.applyCoupons = async (req, res, next) => {
+    try {
+        const { couponNames } = req.body;
 
+        if (!couponNames) {
+            throw new ErrorHandler('Coupon names are required', 400);
+        }
+
+        const couponNameArray = couponNames.split('.');
+
+        if (couponNameArray.length === 0) {
+            throw new ErrorHandler('Invalid coupon names provided', 400);
+        }
+
+        const productsWithCoupons = await Promise.all(couponNameArray.map(async couponName => {
+            const coupon = await Coupon.findOne({ name: couponName });
+            if (!coupon) {
+                return null;
+            }
+            const products = await Product.find({ coupons: coupon._id });
+            return products.map(product => ({
+                name: product.name,
+                price: product.price,
+                quantity: product.quantity || 1, // Default to 1 if quantity is not provided
+                discountPrice: product.price - (product.price * coupon.discount) / 100,
+                couponId: coupon._id,
+                productId: product._id
+            }));
+        }));
+
+        const flattenedProducts = productsWithCoupons.flat().filter(Boolean);
+
+        if (flattenedProducts.length === 0) {
+            throw new ErrorHandler('No products found for the provided coupons', 404);
+        }
+
+        res.status(200).json({
+            success: true,
+            orderItems: flattenedProducts
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+// /**
+//  * @desc    Create a new order
+//  * @route   POST /api/orders/new
+//  * @access  Private
+//  */
+// exports.newOrder = asyncErrorHandler(async (req, res, next) => {
+//     const { shippingInfo, orderItems, paymentInfo, totalPrice } = req.body;
+
+//     // Validate input data
+//     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
+//         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
+//     }
+//     console.log("KKKKKKKKKK",paymentInfo);
+
+//     // Check payment status
+//     if (!paymentInfo.status) {
+//         return next(new ErrorHandler("Payment failed", 400));
+//     }
+
+//     // Check if order with the same paymentInfo already exists
+//     const orderExist = await Order.exists({ paymentInfo });
+
+//     if (orderExist) {
+//         return next(new ErrorHandler("Order Already Placed", 400));
+//     }
+//     console.log("Moye moye");
+
+//     // Create the order
+//     const order = await Order.create({
+//         shippingInfo,
+//         orderItems,
+//         paymentInfo,
+//         totalPrice,
+//         paidAt: Date.now(),
+//         user: req.user._id,
+//     });
+//     console.log("lpppppppplp");
+
+//     // Update product stock asynchronously for each order item
+//     await Promise.all(order.orderItems.map(async (item) => {
+//         await updateStock(item.productId, item.quantity);
+//         await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
+//     }));
+
+//     // Send email notification about the new order in parallel
+//     try {
+//         await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
+//     } catch (error) {
+//         return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
+//     }
+
+//     res.status(201).json({
+//         success: true,
+//         order,
+//     });
+// });
+/**
+ * @desc    Create a new order
+ * @route   POST /api/orders/new
+ * @access  Private
+ */
 /**
  * @desc    Create a new order
  * @route   POST /api/orders/new
  * @access  Private
  */
 exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-    const { shippingInfo, orderItems, paymentInfo, totalPrice } = req.body;
+    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice } = req.body;
 
     // Validate input data
     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
     }
-    console.log("KKKKKKKKKK",paymentInfo);
 
     // Check payment status
     if (!paymentInfo.status) {
@@ -29,7 +133,27 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     if (orderExist) {
         return next(new ErrorHandler("Order Already Placed", 400));
     }
-    console.log("Moye moye");
+
+    // Validate each product's coupon ID and discounted price
+    for (const item of orderItems) {
+        const product = await Product.findById(item.productId);
+        if (!product) {
+            return next(new ErrorHandler("Product not found", 404));
+        }
+
+        // Verify if the coupon is applicable to the product
+        if (item.couponId !== product.couponId) {
+            return next(new ErrorHandler("Invalid coupon applied for product", 400));
+        }
+
+        // Calculate the discounted price for the product if applicable
+        if (item.discountedPrice) {
+            const calculatedDiscountedPrice = await calculateDiscountedPrice(item.couponId, product.price);
+            if (item.discountedPrice !== calculatedDiscountedPrice) {
+                return next(new ErrorHandler("Invalid discounted price for product", 400));
+            }
+        }
+    }
 
     // Create the order
     const order = await Order.create({
@@ -37,10 +161,10 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         orderItems,
         paymentInfo,
         totalPrice,
+        discountedPrice,
         paidAt: Date.now(),
         user: req.user._id,
     });
-    console.log("lpppppppplp");
 
     // Update product stock asynchronously for each order item
     await Promise.all(order.orderItems.map(async (item) => {
@@ -60,6 +184,37 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         order,
     });
 });
+/**
+ * Check if the coupon is applicable to the product
+ * @param {String} couponId - ID of the coupon provided by the user
+ * @param {String} productCouponId - ID of the coupon associated with the product
+ * @returns {Boolean} true if the coupon is applicable, false otherwise
+ */
+async function isCouponApplicable(couponId, productCouponId) {
+    return couponId === productCouponId;
+}
+
+/**
+ * Calculate discounted price for a product based on applied coupon
+ * @param {String} couponId - ID of the coupon applied to the product
+ * @param {Number} productPrice - Original price of the product
+ * @returns {Number} discounted price
+ */
+async function calculateDiscountedPrice(couponId, productPrice) {
+    const coupon = await Coupon.findById(couponId);
+    if (!coupon) {
+        throw new ErrorHandler("Coupon not found", 404);
+    }
+    // Apply discount based on coupon type (percentage)
+    return productPrice - (coupon.amount / 100) * productPrice;
+}
+
+/**
+ * Calculate discounted price for a product based on applied coupon
+ * @param {String} couponId - ID of the coupon applied to the product
+ * @param {Number} productPrice - Original price of the product
+ * @returns {Number} discounted price
+ */
 
 // Function to update piecesSold count for a product
 async function updatePiecesSold(productId, quantity) {

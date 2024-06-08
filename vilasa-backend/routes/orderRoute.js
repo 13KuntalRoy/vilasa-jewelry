@@ -12,7 +12,8 @@ router.route('/admin/update/:id').put(isAuthenticatedUser, authorizeRoles ('admi
 router.route('/admin/delete/:id').delete(isAuthenticatedUser, authorizeRoles ('admin'), orderController.deleteOrder);
 router.route('/:id/return/update').put(isAuthenticatedUser, authorizeRoles('admin'), orderController.updateReturnStatus);
 
-
+router.route('/apply-coupons')
+    .post(orderController.applyCoupons);
 
 module.exports = router;
 

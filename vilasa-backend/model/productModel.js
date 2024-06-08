@@ -199,6 +199,11 @@ const productSchema = new mongoose.Schema({
   offerEndTime: {
     type: Date, // Combine date and time
   },
+  coupons: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Coupon'
+  }]
+
 });
 
 module.exports = mongoose.model('Product', productSchema);

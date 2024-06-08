@@ -7,6 +7,12 @@ const mongoose = require('mongoose');
  * Vilasa confidential.
  */
 const paymentSchema = new mongoose.Schema({
+  // Reference to the User who made the payment
+  userId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true,
+  },
   // Payment result information
   resultInfo: {
     // Status of the payment result (e.g., Success, Failure)
