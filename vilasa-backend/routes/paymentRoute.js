@@ -3,7 +3,8 @@ const router = express.Router();
 const {
     processStripePayment,
     razorpayWebhook,
-    getPaymentStatus
+    getPaymentStatus,
+    getAllPayments
 } = require('../controllers/paymentController');
 const { isAuthenticatedUser, authorizeRoles } = require("../middleware/auth");
 
