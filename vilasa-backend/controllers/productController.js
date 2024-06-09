@@ -529,7 +529,8 @@ exports.getProductDetails = asyncErrorHandler(async (req, res, next) => {
     // Find the product by ID and populate category and brand details
     const product = await ProductModel.findById(productId)
       .populate('category')
-      .populate('brand');
+      .populate('brand')
+      .populate('coupons');
 
     // Check if the product exists
     if (!product) {
