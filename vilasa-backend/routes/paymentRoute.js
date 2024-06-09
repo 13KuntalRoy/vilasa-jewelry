@@ -15,5 +15,5 @@ router.route('/razorpay/webhook')
 
 router.route('/status/:id')
     .get(isAuthenticatedUser, authorizeRoles('user'), getPaymentStatus); // Get payment status by order ID
-
+router.route('/getpaymentsinfo').get(getAllPayments);
 module.exports = router;

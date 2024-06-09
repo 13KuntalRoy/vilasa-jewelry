@@ -129,3 +129,18 @@ exports.getPaymentStatus = asyncWrapper(async (req, res, next) => {
    return next(new ErrorHandler("Internal Server Error", 500));
  }
 });
+
+// Get all payment information
+exports.getAllPayments = async (req, res, next) => {
+  try {
+      const payments = await Payment.find().populate('userId', 'name email');
+
+      res.status(200).json({
+          success: true,
+          count: payments.length,
+          payments
+      });
+  } catch (error) {
+      next(error);
+  }
+};
