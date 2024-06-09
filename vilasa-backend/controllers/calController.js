@@ -47,7 +47,12 @@ exports.getTotalUsers = async () => {
 exports.categoryWiseProductCount = async (req, res, next) => {
   try {
       const categoryCounts = await Product.aggregate([
-          { $group: { _id: '$category', count: { $sum: 1 } } },
+          {
+              $group: {
+                  _id: '$category',
+                  totalQuantity: { $sum: '$stock' }
+              }
+          },
           {
               $lookup: {
                   from: 'categories', // Collection name of categories
@@ -57,23 +62,20 @@ exports.categoryWiseProductCount = async (req, res, next) => {
               }
           },
           {
-              $project: {
-                  _id: 0,
-                  category: { $arrayElemAt: ['$category', 0] },
-                  count: 1
-              }
+              $unwind: '$category'
           },
           {
               $project: {
+                  _id: 0,
                   categoryName: '$category.title',
-                  count: 1
+                  totalQuantity: 1
               }
           }
       ]);
 
       res.status(200).json(categoryCounts);
   } catch (error) {
-      console.error('Error fetching category-wise product count:', error);
+      console.error('Error fetching category-wise product quantity count:', error);
       res.status(500).json({ error: 'Internal server error' });
   }
 };
