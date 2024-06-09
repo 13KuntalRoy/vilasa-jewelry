@@ -44,18 +44,28 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         brand: req.body.brand,
         productweight: req.body.productweight,
         highlights: [],
-        specifications: []
+        specifications: [],
+        coupons:[]
+
       };
       // Process highlights
       for (let i = 0; req.body[`highlights[${i}]`]; i++) {
         productData.highlights.push(req.body[`highlights[${i}]`]);
       }
+
       // Process specifications
       for (let i = 0; req.body[`specifications[${i}][title]`]; i++) {
         productData.specifications.push({
           title: req.body[`specifications[${i}][title]`],
           description: req.body[`specifications[${i}][description]`]
         });
+      }
+      
+      for (let i = 0; req.body[`coupons[${i}]`]; i++) {
+        productData.coupons.push(
+        req.body[`coupons[${i}]`],
+          
+        );
       }
       // Process images
       images = req.files ? req.files.images || [] : [];
@@ -334,9 +344,15 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
     product.highlights = product.highlights.filter(highlight => !updateData.removeHighlights.includes(highlight));
   }
 
+    // Handle coupons removal
+  // Handle coupons removal
+  if (updateData.removeCoupons) {
+    product.coupons = product.coupons.filter(coupon => !updateData.removeCoupons.includes(coupon.toString()));
+  }
+
   // Update the remaining product fields
   for (const key in updateData) {
-    if (key !== 'specifications' && key !== 'removeSpecifications' && key !== 'removeHighlights') {
+    if (key !== 'specifications' && key !== 'removeSpecifications' && key !== 'removeHighlights' && key !=='removecoupons') {
       product[key] = updateData[key];
     }
   }

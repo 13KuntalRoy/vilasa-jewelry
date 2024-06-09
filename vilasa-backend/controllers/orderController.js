@@ -139,7 +139,7 @@ exports.applyCoupons = async (req, res, next) => {
  * @access  Private
  */
 exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice } = req.body;
+    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice,shippingPrice } = req.body;
 
     // Validate input data
     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
@@ -186,6 +186,10 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         paymentInfo,
         totalPrice,
         discountedPrice,
+        itemsPrice,
+        taxPrice,
+        shippingPrice,
+        paid: true,
         paidAt: Date.now(),
         user: req.user._id,
     });
@@ -322,7 +326,7 @@ exports.getSingleOrderDetails = asyncErrorHandler(async (req, res, next) => {
         // Retrieve order details and populate user information
         const order = await Order.findById(req.params.id)
             .populate("user")
-            .populate({path: "orderItems.productId",})
+            .populate({ path: "orderItems.productId", })
 
         // Check if order exists
         if (!order) {
@@ -530,7 +534,7 @@ exports.updateReturnStatus = asyncErrorHandler(async (req, res, next) => {
 
     // Update payment status
     console.log(paymentStatus);
-    order.paymentInfo.status= paymentStatus;
+    order.paymentInfo.status = paymentStatus;
 
     await order.save();
 
