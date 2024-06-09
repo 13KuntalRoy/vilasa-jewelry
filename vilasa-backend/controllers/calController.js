@@ -153,44 +153,86 @@ exports.getSalesDataByYearAndMonth = async (req, res) => {
 };
 
 // Controller function to fetch total sales data by category
-exports.getTotalSalesByCategory = async (req, res) => {
-    try {
-      // Query the database to retrieve all orders
-      const orders = await Order.find().populate('orderItems.productId');
+// exports.getTotalSalesByCategory = async (req, res) => {
+//     try {
+//       // Query the database to retrieve all orders
+//       const orders = await Order.find().populate('orderItems.productId');
   
-      // Process the retrieved data to calculate the total sales for each category
-      const categorySales = {};
-      for (const order of orders) {
-        for (const item of order.orderItems) {
-          const product = item.productId;
-          if (product && product.category) {
-            const category = product.category.toString();
-            const quantity = item.quantity;
-            if (!categorySales[category]) {
-              categorySales[category] = 0;
-            }
-            categorySales[category] += quantity;
+//       // Process the retrieved data to calculate the total sales for each category
+//       const categorySales = {};
+//       for (const order of orders) {
+//         for (const item of order.orderItems) {
+//           const product = item.productId;
+//           if (product && product.category) {
+//             const category = product.category.toString();
+//             const quantity = item.quantity;
+//             if (!categorySales[category]) {
+//               categorySales[category] = 0;
+//             }
+//             categorySales[category] += quantity;
+//           }
+//         }
+//       }
+  
+//       // Prepare the data for the pie chart format
+//       const pieChartData = [];
+//       for (const category in categorySales) {
+//         pieChartData.push({
+//           category,
+//           totalSales: categorySales[category],
+//         });
+//       }
+  
+//       // Send the pie chart data as the response
+//       res.status(200).json(pieChartData);
+//     } catch (error) {
+//       console.error('Error fetching total sales data by category:', error);
+//       res.status(500).json({ error: 'Internal server error' });
+//     }
+//   };
+exports.getTotalSalesByCategory = async (req, res) => {
+  try {
+    // Query the database to retrieve all orders
+    const orders = await Order.find().populate({
+      path: 'orderItems.productId',
+      populate: {
+        path: 'category',
+        model: 'Category',
+      },
+    });
+
+    // Process the retrieved data to calculate the total sales for each category
+    const categorySales = {};
+    for (const order of orders) {
+      for (const item of order.orderItems) {
+        const product = item.productId;
+        if (product && product.category) {
+          const category = product.category.title;
+          const quantity = item.quantity;
+          if (!categorySales[category]) {
+            categorySales[category] = 0;
           }
+          categorySales[category] += quantity;
         }
       }
-  
-      // Prepare the data for the pie chart format
-      const pieChartData = [];
-      for (const category in categorySales) {
-        pieChartData.push({
-          category,
-          totalSales: categorySales[category],
-        });
-      }
-  
-      // Send the pie chart data as the response
-      res.status(200).json(pieChartData);
-    } catch (error) {
-      console.error('Error fetching total sales data by category:', error);
-      res.status(500).json({ error: 'Internal server error' });
     }
-  };
 
+    // Prepare the data for the pie chart format
+    const pieChartData = [];
+    for (const category in categorySales) {
+      pieChartData.push({
+        category,
+        totalSales: categorySales[category],
+      });
+    }
+
+    // Send the pie chart data as the response
+    res.status(200).json(pieChartData);
+  } catch (error) {
+    console.error('Error fetching total sales data by category:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
 // Controller function to calculate total revenue
 exports.getTotalRevenue = async (req, res) => {
   try {
