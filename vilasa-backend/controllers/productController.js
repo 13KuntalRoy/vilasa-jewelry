@@ -1066,8 +1066,8 @@ exports.createCategory = async (req, res, next) => {
       // Upload image to Cloudinary
       const result = await cloudinary.v2.uploader.upload(image.tempFilePath, {
         folder: 'category_images', // Specify the folder in Cloudinary to store category images
-        width: 150,
-        crop: 'scale',
+        // width: 150,
+        // crop: 'scale',
       
       });
       
