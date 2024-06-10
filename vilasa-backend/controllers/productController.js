@@ -42,6 +42,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         offerStartTime: req.body.offerStartTime,
         offerEndTime: req.body.offerEndTime,
         brand: req.body.brand,
+        material:req.body.material,
         productweight: req.body.productweight,
         highlights: [],
         specifications: [],

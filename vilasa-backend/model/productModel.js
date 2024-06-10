@@ -109,6 +109,11 @@ const productSchema = new mongoose.Schema({
     default: 0,
     // Explanation: Number of pieces sold for this product. Default value is 0.
   },
+  material:{
+    type: String,
+    default: '',
+    // Explanation: Material of the product. Default value is empty.
+  },
 
   // Product warranty
   warranty: {
