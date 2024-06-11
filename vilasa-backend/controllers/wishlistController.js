@@ -14,15 +14,18 @@ exports.addToWishlist = async (req, res) => {
         user: userId,
         products: [productId]
       });
+      await wishlist.save();
+      return res.status(200).json(wishlist);
     } else {
       const productIndex = wishlist.products.findIndex(prod => prod.toString() === productId);
-      if (productIndex === -1) {
+      if (productIndex !== -1) {
+        return res.status(200).json({ message: 'Product is already in your wishlist' });
+      } else {
         wishlist.products.push(productId);
+        await wishlist.save();
+        return res.status(200).json(wishlist);
       }
     }
-
-    await wishlist.save();
-    res.status(200).json(wishlist);
   } catch (error) {
     console.error('Error adding product to wishlist:', error);
     res.status(500).json({ error: 'Internal server error' });
