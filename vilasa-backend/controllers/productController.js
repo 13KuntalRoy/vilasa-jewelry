@@ -151,25 +151,41 @@ exports.getAllProducts = async (req, res) => {
       return res.status(400).json({ success: false, message: "Invalid resultPerPage value" });
     }
 
-    // Count total number of products
-    const productsCount = await ProductModel.countDocuments();
+    // Parse and validate the page parameter
+    let page = parseInt(req.query.page) || 1;
+    if (page < 1) {
+      page = 1;
+    }
+
+    // Construct the filter object
+    const filters = {};
+    if (req.query.category) {
+      filters.category = req.query.category;
+    }
+    if (req.query.brand) {
+      filters.brand = req.query.brand;
+    }
+    if(req.query.material){
+      filters.material = req.query.material;
+    }
+    // Add more filters as needed, e.g., price range, search term, etc.
+
+    // Count total number of filtered products
+    const productsCount = await ProductModel.countDocuments(filters);
 
     // Calculate total pages
     const totalPages = Math.ceil(productsCount / resultPerPage);
 
-    // Parse and validate the page parameter, adjust if out of range
-    let page = parseInt(req.query.page) || 1;
-    if (page < 1) {
-      page = 1;
-    } else if (page > totalPages) {
+    // Adjust page if it exceeds the total number of pages
+    if (page > totalPages) {
       page = totalPages;
     }
 
     // Calculate skip value based on page number and resultPerPage
     const skip = (page - 1) * resultPerPage;
 
-    // Fetch products with pagination and populate category and brand details
-    const products = await ProductModel.find()
+    // Fetch filtered products with pagination and populate category and brand details
+    const products = await ProductModel.find(filters)
       .skip(skip)
       .limit(resultPerPage)
       .populate('category')
@@ -190,6 +206,7 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
+
 
 /**
  * @route   GET /api/products/admin
