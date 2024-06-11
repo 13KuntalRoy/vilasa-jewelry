@@ -926,7 +926,7 @@ exports.getTopRatedProducts = asyncErrorHandler( async (req, res, next) => {
 // });
 exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
   const productId = req.params.id;
-  
+
   try {
     // Find the product by its ID
     const product = await ProductModel.findById(productId);
@@ -939,11 +939,11 @@ exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
       });
     }
 
-    // Find related products by the same category, excluding the current product
-    const relatedProducts = await ProductModel.find({
-      category: product.category,
-      _id: { $ne: productId }
-    }).limit(4);
+    // Find related products by the same category, excluding the current product, and select 4 random products
+    const relatedProducts = await ProductModel.aggregate([
+      { $match: { category: product.category, _id: { $ne: productId } } },
+      { $sample: { size: 4 } }
+    ]);
 
     res.status(200).json({
       success: true,
