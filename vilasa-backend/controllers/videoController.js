@@ -89,7 +89,7 @@ exports.updateVideo = async (req, res) => {
 
     if (req.files) {
       await cloudinary.v2.uploader.destroy(video.video.public_id, { resource_type: "video" });
-      const result = await cloudinary.v2.uploader.upload(req.files.video, { resource_type: "video" });
+      const result = await cloudinary.v2.uploader.upload(req.files.video.tempFilePath, { resource_type: "video" });
       video.video.public_id = result.public_id;
       video.video.url = result.secure_url;
     }
