@@ -160,13 +160,15 @@ exports.getAllProducts = async (req, res) => {
     // Construct the filter object
     const filters = {};
     if (req.query.category) {
-      filters.category = req.query.category;
+      const categories = Array.isArray(req.query.category) ? req.query.category : [req.query.category];
+      filters.category = { $in: categories };
     }
     if (req.query.brand) {
       filters.brand = req.query.brand;
     }
-    if(req.query.material){
-      filters.material = req.query.material;
+    if (req.query.material) {
+      const materials = Array.isArray(req.query.material) ? req.query.material : [req.query.material];
+      filters.material = { $in: materials };
     }
     // Add more filters as needed, e.g., price range, search term, etc.
 
@@ -206,7 +208,6 @@ exports.getAllProducts = async (req, res) => {
     res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 };
-
 
 /**
  * @route   GET /api/products/admin
