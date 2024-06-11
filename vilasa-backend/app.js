@@ -28,7 +28,7 @@ const teamProfile = require('./routes/teamprofileRoute')
 const cart = require('./routes/cartRoute')
 const wishlist = require('./routes/wishlistRoute')
 const cal = require('./routes/calRoute')
-const video = require('./routes/videoRoute')
+const videos = require('./routes/videoRoute')
 
 // Middleware setup
 app.use(cookieParser()); // Middleware for parsing cookies
@@ -76,7 +76,7 @@ app.use("/api/vilasa-v1/teamProfile/v1",teamProfile);
 app.use("/api/vilasa-v1/cart/v1",cart);
 app.use("/api/vilasa-v1/wishlist/v1",wishlist);
 app.use("/api/vilasa-v1/dashboard",cal)
-app.use("/api/vilasa-v1/video", video); 
+app.use("/api/vilasa-v1/video", videos); 
 
 // Middleware to expose endpoint list only in development mode
 
