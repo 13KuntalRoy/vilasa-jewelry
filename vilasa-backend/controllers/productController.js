@@ -911,20 +911,48 @@ exports.getTopRatedProducts = asyncErrorHandler( async (req, res, next) => {
  * @desc    Get related products
  * @access  Public
  */
+// exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
+//     const productId = req.params.id;
+//     const product = await ProductModel.findById(productId);
+//     const relatedProducts = await ProductModel.find({
+//         $or: [{ category: product.category }, { "brand.name": product.brand.name }],
+//         _id: { $ne: productId }
+//     }).limit(4);
+
+//     res.status(200).json({
+//         success: true,
+//         products: relatedProducts,
+//     });
+// });
 exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
-    const productId = req.params.id;
+  const productId = req.params.id;
+  
+  try {
+    // Find the product by its ID
     const product = await ProductModel.findById(productId);
+
+    // If the product is not found, return a 404 error
+    if (!product) {
+      return res.status(404).json({
+        success: false,
+        message: "Product not found",
+      });
+    }
+
+    // Find related products by the same category, excluding the current product
     const relatedProducts = await ProductModel.find({
-        $or: [{ category: product.category }, { "brand.name": product.brand.name }],
-        _id: { $ne: productId }
+      category: product.category,
+      _id: { $ne: productId }
     }).limit(4);
 
     res.status(200).json({
-        success: true,
-        products: relatedProducts,
+      success: true,
+      products: relatedProducts,
     });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Internal Server Error" });
+  }
 });
-
 /**
  * @route   GET /api/products/price-range
  * @desc    Get products by price range
