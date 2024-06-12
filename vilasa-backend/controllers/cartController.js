@@ -126,25 +126,93 @@ exports.addToCart = async (req, res) => {
 };
 
 // Update item quantity in cart
+// exports.updateCartItemQuantity = async (req, res) => {
+//   try {
+//     let { cartItemId, quantity } = req.body;
+//     const userId = req.user._id;
+
+//     // If quantity is not provided, set it to 1
+//     if (!quantity) {
+//       quantity = 1;
+//     }
+
+//     let cart = await Cart.findOne({ user: userId });
+
+//     if (!cart) {
+//       return res.status(404).json({ error: 'Cart not found' });
+//     }
+
+//     const item = cart.items.id(cartItemId);
+//     if (!item) {
+//       return res.status(404).json({ error: 'Item not found in cart' });
+//     }
+
+//     // Fetch the product associated with the cart item
+//     const product = await Product.findById(item.product);
+
+//     // If the product doesn't exist, return an error
+//     if (!product) {
+//       return res.status(404).json({ error: 'Product not found' });
+//     }
+
+//     // Check if the requested quantity exceeds the available stock for the product
+//     if (product.stock < quantity) {
+//       return res.status(400).json({ error: 'Requested quantity exceeds available stock' });
+//     }
+
+//     // Update the quantity of the cart item
+//     item.quantity = quantity;
+
+//     // Calculate the total price of the items in the cart
+//     let totalPrice = 0;
+//     for (const cartItem of cart.items) {
+//       const cartProduct = await Product.findById(cartItem.product);
+//       if (cartProduct) {
+//         totalPrice += cartProduct.price * cartItem.quantity;
+//       }
+//     }
+
+//     // Update the total price in the cart
+//     cart.totalPrice = totalPrice;
+
+//     // Save the updated cart
+//     await cart.save();
+
+//     // Respond with the updated cart
+//     res.status(200).json(cart);
+//   } catch (error) {
+//     console.error('Error updating cart item quantity:', error);
+//     res.status(500).json({ error: 'Internal server error' });
+//   }
+// };
 exports.updateCartItemQuantity = async (req, res) => {
   try {
-    let { cartItemId, quantity } = req.body;
+    const { cartItemId, quantity } = req.body;
     const userId = req.user._id;
 
-    // If quantity is not provided, set it to 1
-    if (!quantity) {
-      quantity = 1;
-    }
-
+    // Find the user's cart
     let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
+    // Find the item in the cart
     const item = cart.items.id(cartItemId);
+
     if (!item) {
       return res.status(404).json({ error: 'Item not found in cart' });
+    }
+
+    // If quantity is not provided, increase by one
+    if (quantity === undefined || quantity === null) {
+      item.quantity += 1;
+    } else {
+      // Validate the quantity
+      if (typeof quantity !== 'number' || quantity <= 0) {
+        return res.status(400).json({ error: 'Invalid quantity' });
+      }
+      item.quantity = quantity;
     }
 
     // Fetch the product associated with the cart item
@@ -156,12 +224,9 @@ exports.updateCartItemQuantity = async (req, res) => {
     }
 
     // Check if the requested quantity exceeds the available stock for the product
-    if (product.stock < quantity) {
+    if (product.stock < item.quantity) {
       return res.status(400).json({ error: 'Requested quantity exceeds available stock' });
     }
-
-    // Update the quantity of the cart item
-    item.quantity = quantity;
 
     // Calculate the total price of the items in the cart
     let totalPrice = 0;
