@@ -12,6 +12,6 @@ router.route('/cart-items/:itemId')
   .delete(isAuthenticatedUser,cartController.deleteCartItem); // Delete item from cart
 
 router.route('/cart-items/deleteCartItem/:itemId')
-  .delete(isAuthenticatedUser, cartController.deleteCartItem);
+  .delete(isAuthenticatedUser, cartController.removeItemFromCart);
 
 module.exports = router;

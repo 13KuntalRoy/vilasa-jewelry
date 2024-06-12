@@ -268,11 +268,13 @@ exports.getAllItemsInCart = async (req, res) => {
 };
 
 // Delete item from cart
-exports.deleteCartItem = async (req, res) => {
+// Remove item from cart (remove item entirely regardless of quantity)
+exports.removeItemFromCart = async (req, res) => {
   try {
     const cartItemId = req.params.itemId;
     const userId = req.user._id;
 
+    // Find the user's cart
     let cart = await Cart.findOne({ user: userId });
 
     if (!cart) {
@@ -286,18 +288,15 @@ exports.deleteCartItem = async (req, res) => {
       return res.status(404).json({ error: 'Item not found in cart' });
     }
 
-    // Calculate the price of the item to be removed
-    const product = await Product.findById(cart.items[itemIndex].product);
-    if (!product) {
-      return res.status(404).json({ error: 'Product not found' });
-    }
-    const itemTotalPrice = product.price * cart.items[itemIndex].quantity;
-
     // Remove the item from the cart
     cart.items.splice(itemIndex, 1);
 
-    // Update the total price by subtracting the price of the removed item
-    cart.totalPrice -= itemTotalPrice;
+    // Recalculate the total price of the cart
+    cart.totalPrice = cart.items.reduce((total, item) => {
+      const productPrice = item.product.price;
+      const itemTotalPrice = productPrice * item.quantity;
+      return total + itemTotalPrice;
+    }, 0);
 
     // Save the updated cart
     await cart.save();
