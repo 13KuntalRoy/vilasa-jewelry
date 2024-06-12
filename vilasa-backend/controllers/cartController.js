@@ -241,12 +241,12 @@ exports.deleteCartItem = async (req, res) => {
 
 // Get all items in the cart
 // Get all items in the cart
+// Get all items in the cart
 exports.getAllItemsInCart = async (req, res) => {
   try {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
-      path: 'items.product',
-     // Adjust the selected fields as needed
+      path: 'items.product'
     });
 
     if (!cart) {
@@ -256,13 +256,7 @@ exports.getAllItemsInCart = async (req, res) => {
     // Extract item details including product details and item _id
     const itemsWithDetails = cart.items.map(item => ({
       _id: item._id, // Include the item _id
-      product: {
-        name: item.product.name,
-        description: item.product.description,
-        price: item.product.price,
-        stock: item.product.stock,
-        // Add other product details as needed
-      },
+      product: item.product, // Include all product details
       quantity: item.quantity
     }));
 
