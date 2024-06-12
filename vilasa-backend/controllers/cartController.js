@@ -246,7 +246,7 @@ exports.getAllItemsInCart = async (req, res) => {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
       path: 'items.product',
-      select: 'name description price stock -_id', // Adjust the selected fields as needed
+     // Adjust the selected fields as needed
     });
 
     if (!cart) {
