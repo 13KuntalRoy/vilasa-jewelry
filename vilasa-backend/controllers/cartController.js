@@ -240,25 +240,27 @@ exports.deleteCartItem = async (req, res) => {
 
 
 // Get all items in the cart
+// Get all items in the cart
 exports.getAllItemsInCart = async (req, res) => {
   try {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
       path: 'items.product',
-      select: '-__v', // Exclude the "__v" field from the product details
+      select: 'name description price stock -_id', // Adjust the selected fields as needed
     });
 
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
     }
 
-    // Extract item details including product details
+    // Extract item details including product details and item _id
     const itemsWithDetails = cart.items.map(item => ({
+      _id: item._id, // Include the item _id
       product: {
-        _id: item.product._id,
         name: item.product.name,
         description: item.product.description,
         price: item.product.price,
+        stock: item.product.stock,
         // Add other product details as needed
       },
       quantity: item.quantity
@@ -266,6 +268,8 @@ exports.getAllItemsInCart = async (req, res) => {
 
     res.status(200).json({ cart: { items: itemsWithDetails, totalPrice: cart.totalPrice } });
   } catch (error) {
+    console.error('Error fetching cart items:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
