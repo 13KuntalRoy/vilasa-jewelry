@@ -11,7 +11,7 @@ router.route('/cart-items/:itemId')
   .put(isAuthenticatedUser,cartController.updateCartItemQuantity) // Update item quantity in cart
   .delete(isAuthenticatedUser,cartController.deleteCartItem); // Delete item from cart
 
-router.route('/cart-items/deleteCartItem/:itemId')
+router.route('deleteCartItem/cart-items/:itemId')
   .delete(isAuthenticatedUser, cartController.removeItemFromCart);
 
 module.exports = router;
