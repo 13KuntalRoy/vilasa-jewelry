@@ -313,8 +313,7 @@ exports.getAllItemsInCart = async (req, res) => {
     const cart = await Cart.findOne({ user: userId }).populate({
       path: 'items.product'
     }).populate({
-      path: 'coupon', // Assuming the cart schema has a field named 'coupon'
-      model: 'Coupon'
+      path: 'items.product.coupon', // Assuming the cart schema has a field named 'coupon'
     });
 
 
