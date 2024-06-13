@@ -72,6 +72,76 @@ const sendEmail = require('../utils/sendEmail');
 //         next(error);
 //     }
 // };
+// exports.applyCoupons = async (req, res, next) => {
+//     try {
+//         const { selectedProducts, couponNames } = req.body;
+
+//         if (!selectedProducts || selectedProducts.length === 0) {
+//             throw new ErrorHandler('Selected products are required', 400);
+//         }
+
+//         if (!couponNames) {
+//             throw new ErrorHandler('Coupon names are required', 400);
+//         }
+
+//         const couponNameArray = couponNames.split('.');
+//         if (couponNameArray.length === 0) {
+//             throw new ErrorHandler('Invalid coupon names provided', 400);
+//         }
+
+//         const coupons = await Coupon.find({ name: { $in: couponNameArray } });
+//         console.log(`${coupons} + Moye mmoyee`);
+
+//         if (coupons.length === 0) {
+//             throw new ErrorHandler('No valid coupons found', 404);
+//         }
+
+//         const productsWithCoupons = await Promise.all(selectedProducts.map(async (selectedProduct) => {
+//             const product = await Product.findById(selectedProduct.productId).populate('coupons');
+
+//             if (!product) {
+//                 return null;
+//             }
+
+//             let discountPrice = product.price;
+//             let appliedCouponIds = [];
+
+//             const productCouponIds = product.coupons.map(coupon => coupon._id.toString());
+
+//             coupons.forEach(coupon => {
+//                 if (productCouponIds.includes(coupon._id.toString())) {
+//                     discountPrice -= (product.price * coupon.discount) / 100;
+//                     appliedCouponIds.push(coupon._id);
+//                 }
+//             });
+
+//             return {
+//                 name: product.name,
+//                 price: product.price,
+//                 quantity: selectedProduct.quantity,
+//                 discountPrice,
+//                 couponIds: appliedCouponIds,
+//                 productId: product._id
+//             };
+//         }));
+
+//         const filteredProducts = productsWithCoupons.filter(Boolean);
+
+//         if (filteredProducts.length === 0) {
+//             throw new ErrorHandler('No valid products found for the provided coupons', 404);
+//         }
+
+//         const totalDiscountPrice = filteredProducts.reduce((total, product) => total + product.discountPrice * product.quantity, 0);
+
+//         res.status(200).json({
+//             success: true,
+//             orderItems: filteredProducts,
+//             totalDiscountPrice
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
 exports.applyCoupons = async (req, res, next) => {
     try {
         const { selectedProducts, couponNames } = req.body;
@@ -121,7 +191,8 @@ exports.applyCoupons = async (req, res, next) => {
                 quantity: selectedProduct.quantity,
                 discountPrice,
                 couponIds: appliedCouponIds,
-                productId: product._id
+                productId: product._id,
+                image: product.images // Assuming 'images' is a field in your Product model
             };
         }));
 
