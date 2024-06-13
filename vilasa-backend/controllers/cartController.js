@@ -312,7 +312,11 @@ exports.getAllItemsInCart = async (req, res) => {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
       path: 'items.product'
+    }).populate({
+      path: 'coupon', // Assuming the cart schema has a field named 'coupon'
+      model: 'Coupon'
     });
+
 
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
