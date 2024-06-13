@@ -311,11 +311,11 @@ exports.getAllItemsInCart = async (req, res) => {
   try {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
-      path: 'items.product'
-    }).populate({
-      path: 'items.product.coupons', // Assuming the cart schema has a field named 'coupon'
+      path: 'items.product',
+      populate: {
+        path: 'coupons' // Populate coupons for each product in the cart items
+      }
     });
-
 
     if (!cart) {
       return res.status(404).json({ error: 'Cart not found' });
@@ -328,7 +328,12 @@ exports.getAllItemsInCart = async (req, res) => {
       quantity: item.quantity
     }));
 
-    res.status(200).json({ cart: { items: itemsWithDetails, totalPrice: cart.totalPrice } });
+    res.status(200).json({ 
+      cart: { 
+        items: itemsWithDetails, 
+        totalPrice: cart.totalPrice 
+      } 
+    });
   } catch (error) {
     console.error('Error fetching cart items:', error);
     res.status(500).json({ error: 'Internal server error' });
