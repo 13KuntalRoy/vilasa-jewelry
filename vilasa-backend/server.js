@@ -18,10 +18,6 @@ cloudinary.config({
     api_secret: process.env.API_SECRET,
 });
 
-// Define a simple route handler for the root path
-app.get('/', (req, res) => {
-    res.send('Saiyli backend work');
-});
 
 // Create an HTTP server
 const server = http.createServer(app);
