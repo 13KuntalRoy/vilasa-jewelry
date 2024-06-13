@@ -1,14 +1,15 @@
 const app = require('./app');
 const dotenv = require("dotenv");
-const connectdatabase = require("./database/connectdatabase");
+const connectDatabase = require("./database/connectDatabase");
 const cloudinary = require("cloudinary");
-
+const http = require('http');
+const { Server } = require('socket.io');
 
 // Load environment variables
 dotenv.config({ path: "vilasa-backend/config/config.env" });
 
 // Connect to MongoDB
-connectdatabase();
+connectDatabase();
 
 // Configure Cloudinary
 cloudinary.config({
@@ -17,26 +18,82 @@ cloudinary.config({
     api_secret: process.env.API_SECRET,
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-const server = app.listen(PORT, () => {
-    console.log(`Server is listening on PORT ${PORT}`);
+// Define a simple route handler for the root path
+app.get('/', (req, res) => {
+    res.send('Saiyli backend work');
 });
 
+// Create an HTTP server
+const server = http.createServer(app);
 
+// Integrate Socket.IO with the HTTP server
+const io = new Server(server, {
+    cors: {
+        origin: [
+            "http://localhost:5173",
+            "https://vilasajewelry.netlify.app",
+            "http://localhost:3000",
+            "http://localhost"
+        ],
+        methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+        credentials: true,
+    }
+});
+
+// Socket.IO connection handler
+io.on('connection', (socket) => {
+    console.log('A user connected', socket.id);
+
+    // Handle chat message event
+    socket.on('chat_message', ({ room, msg }) => {
+        console.log('Message: ' + msg);
+        socket.to(room).emit("receive-message", msg);
+    });
+
+    socket.on('enquiry', (enquiry) => {
+        console.log('New enquiry:', enquiry);
+        io.emit("New_Enquiry", enquiry);
+    });
+
+    socket.on("join-room", (room) => {
+        socket.join(room);
+        console.log(`User joined room ${room}`);
+    });
+
+    // Handle status change
+    socket.on('status_change', (updatedEnquiry) => {
+        console.log('Status change:', updatedEnquiry);
+        io.emit("Enquiry_Status_Changed", updatedEnquiry);
+    });
+
+    socket.on("deleteEnquiryById", (enquiryId) => {
+        console.log(`Enquiry deleted: ${enquiryId}`);
+        io.emit("delete-enquiry", enquiryId);
+    });
+
+    // Handle disconnection
+    socket.on('disconnect', () => {
+        console.log('User disconnected');
+    });
+});
+
+// Start the server
+const PORT = process.env.PORT || 5000;
+server.listen(PORT, () => {
+    console.log(`Server is listening on PORT ${PORT}`);
+});
 
 // Handle uncaught exceptions
 process.on("uncaughtException", (err) => {
     console.error(`Uncaught Exception: ${err.message}`);
-    console.error("Shutting down the server due to Uncaught Exception");
-    // Graceful shutdown
+    console.error("Shutting down the server due to an uncaught exception");
     process.exit(1);
 });
 
 // Handle unhandled promise rejections
 process.on("unhandledRejection", (err) => {
     console.error(`Unhandled Promise Rejection: ${err.message}`);
-    console.error("Shutting down the server due to Unhandled Promise Rejection");
+    console.error("Shutting down the server due to an unhandled promise rejection");
     server.close(() => {
         process.exit(1);
     });
