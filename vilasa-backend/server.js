@@ -1,6 +1,6 @@
 const app = require('./app');
 const dotenv = require("dotenv");
-const connectDatabase = require("./database/connectDatabase");
+const connectDatabase = require("./database/connectdatabase");
 const cloudinary = require("cloudinary");
 const http = require('http');
 const { Server } = require('socket.io');
