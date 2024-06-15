@@ -47,7 +47,7 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         SKU:req.body.SKU,
         highlights: [],
         specifications: [],
-        coupons:[]
+        // coupons:[]
 
       };
       // Process highlights
@@ -63,12 +63,12 @@ exports.createProduct = asyncErrorHandler(async (req, res) => {
         });
       }
       
-      for (let i = 0; req.body[`coupons[${i}]`]; i++) {
-        productData.coupons.push(
-        req.body[`coupons[${i}]`],
+      // for (let i = 0; req.body[`coupons[${i}]`]; i++) {
+      //   productData.coupons.push(
+      //   req.body[`coupons[${i}]`],
           
-        );
-      }
+      //   );
+      // }
       // Process images
       images = req.files ? req.files.images || [] : [];
     }
@@ -413,13 +413,13 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
 
     // Handle coupons removal
   // Handle coupons removal
-  if (updateData.removeCoupons) {
-    product.coupons = product.coupons.filter(coupon => !updateData.removeCoupons.includes(coupon.toString()));
-  }
+  // if (updateData.removeCoupons) {
+  //   product.coupons = product.coupons.filter(coupon => !updateData.removeCoupons.includes(coupon.toString()));
+  // }
 
   // Update the remaining product fields
   for (const key in updateData) {
-    if (key !== 'specifications' && key !== 'removeSpecifications' && key !== 'removeHighlights' && key !=='removecoupons') {
+    if (key !== 'specifications' && key !== 'removeSpecifications' && key !== 'removeHighlights' ) {
       product[key] = updateData[key];
     }
   }
@@ -596,8 +596,8 @@ exports.getProductDetails = asyncErrorHandler(async (req, res, next) => {
     // Find the product by ID and populate category and brand details
     const product = await ProductModel.findById(productId)
       .populate('category')
-      .populate('brand')
-      .populate('coupons');
+      .populate('brand');
+      // .populate('coupons');
 
     // Check if the product exists
     if (!product) {
@@ -674,7 +674,7 @@ exports.getProductDetails = asyncErrorHandler(async (req, res, next) => {
 // });
 exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
   try {
-    const { ratings, comment, title } = req.body;
+    const { ratings, comment} = req.body;
     const productId = req.params.id;
 
     // Validate ratings value
@@ -683,11 +683,12 @@ exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
     }
 
     // Validate presence of required fields
-    if (!ratings || !comment || !title) {
+    if (!ratings || !comment || !name || !email) {
       return next(new ErrorHandler("Please provide all required fields", 400));
     }
 
     // Upload image to Cloudinary
+    
     const result = await cloudinary.uploader.upload(req.files.images.tempFilePath);
     const imageUrl = { public_id: result.public_id, url: result.secure_url };
 
@@ -696,7 +697,7 @@ exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
       user: req.user._id, // Populate user field with user ID
       name: req.user.name,
       rating: Number(ratings), // Corrected field name
-      title: title,
+      email: req.user.email,
       comment: comment,
       images: imageUrl, // Use a single image object instead of an array
     };
@@ -1262,8 +1263,8 @@ exports.deleteCategory = async (req, res, next) => {
 // Create a new coupon
 exports.createCoupon = async (req, res, next) => {
   try {
-    const { name, expiry, discount } = req.body;
-    const coupon = await Coupon.create({ name, expiry, discount });
+    const { name, expiry, discount,validateamount } = req.body;
+    const coupon = await Coupon.create({ name, expiry, discount,validateamount });
     res.status(201).json({ success: true, coupon });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
@@ -1280,8 +1281,8 @@ exports.getAllCoupons = asyncErrorHandler(async (req, res, next) => {
 exports.updateCoupon = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, expiry, discount } = req.body;
-    const updatedCoupon = await Coupon.findByIdAndUpdate(id, { name, expiry, discount }, { new: true });
+    const { name, expiry, discount,validateamount } = req.body;
+    const updatedCoupon = await Coupon.findByIdAndUpdate(id, { name, expiry, discount,validateamount }, { new: true });
     if (!updatedCoupon) {
       return res.status(404).json({ success: false, message: 'Coupon not found' });
     }

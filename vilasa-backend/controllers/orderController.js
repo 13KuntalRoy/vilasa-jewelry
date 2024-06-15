@@ -4,6 +4,46 @@ const Coupon = require('../model/Coupon');
 const Product = require('../model/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
+const mongoose = require('mongoose');
+exports.updateCartQuantity = async (req, res, next) => {
+    try {
+        const { productId, quantity, couponName } = req.body;
+
+        // Validate product ID
+        if (!mongoose.Types.ObjectId.isValid(productId)) {
+            throw new ErrorHandler('Invalid product ID', 400);
+        }
+
+        // Find the product by ID
+        const product = await Product.findById(productId);
+        if (!product) {
+            throw new ErrorHandler('Product not found', 404);
+        }
+
+        // Calculate the updated total price
+        let totalPrice = product.price * quantity;
+        let discountPrice = product.price;
+
+        // If a coupon is applied, calculate the discount price
+        if (couponName) {
+            const coupon = await Coupon.findOne({ name: couponName });
+            if (coupon && product.price >= coupon.validateamount && new Date(coupon.expiry) > new Date()) {
+                discountPrice -= (product.price * coupon.discount) / 100;
+            }
+            totalPrice = discountPrice * quantity;
+        }
+
+        res.status(200).json({
+            success: true,
+            productId: product._id,
+            quantity,
+            discountPrice,
+            totalPrice
+        });
+    } catch (error) {
+        next(error);
+    }
+};
 
 // exports.applyCoupons = async (req, res, next) => {
 //     try {
@@ -142,73 +182,150 @@ const sendEmail = require('../utils/sendEmail');
 //         next(error);
 //     }
 // };
+// exports.applyCoupons = async (req, res, next) => {
+//     try {
+//         const { selectedProducts, couponNames } = req.body;
+
+//         if (!selectedProducts || selectedProducts.length === 0) {
+//             throw new ErrorHandler('Selected products are required', 400);
+//         }
+
+//         if (!couponNames) {
+//             throw new ErrorHandler('Coupon names are required', 400);
+//         }
+
+//         const couponNameArray = couponNames.split('.');
+//         if (couponNameArray.length === 0) {
+//             throw new ErrorHandler('Invalid coupon names provided', 400);
+//         }
+
+//         const coupons = await Coupon.find({ name: { $in: couponNameArray } });
+//         console.log(`${coupons} + Moye mmoyee`);
+
+//         if (coupons.length === 0) {
+//             throw new ErrorHandler('No valid coupons found', 404);
+//         }
+
+//         const productsWithCoupons = await Promise.all(selectedProducts.map(async (selectedProduct) => {
+//             const product = await Product.findById(selectedProduct.productId).populate('coupons');
+
+//             if (!product) {
+//                 return null;
+//             }
+
+//             let discountPrice = product.price;
+//             let appliedCouponIds = [];
+
+//             const productCouponIds = product.coupons.map(coupon => coupon._id.toString());
+
+//             coupons.forEach(coupon => {
+//                 if (productCouponIds.includes(coupon._id.toString())) {
+//                     discountPrice -= (product.price * coupon.discount) / 100;
+//                     appliedCouponIds.push(coupon._id);
+//                 }
+//             });
+
+//             return {
+//                 name: product.name,
+//                 price: product.price,
+//                 quantity: selectedProduct.quantity,
+//                 discountPrice,
+//                 couponIds: appliedCouponIds,
+//                 productId: product._id,
+//                 image: product.images // Assuming 'images' is a field in your Product model
+//             };
+//         }));
+
+//         const filteredProducts = productsWithCoupons.filter(Boolean);
+
+//         if (filteredProducts.length === 0) {
+//             throw new ErrorHandler('No valid products found for the provided coupons', 404);
+//         }
+
+//         const totalDiscountPrice = filteredProducts.reduce((total, product) => total + product.discountPrice * product.quantity, 0);
+
+//         res.status(200).json({
+//             success: true,
+//             orderItems: filteredProducts,
+//             totalDiscountPrice
+//         });
+//     } catch (error) {
+//         next(error);
+//     }
+// };
 exports.applyCoupons = async (req, res, next) => {
     try {
-        const { selectedProducts, couponNames } = req.body;
+        const { selectedProducts, couponName } = req.body;
 
         if (!selectedProducts || selectedProducts.length === 0) {
             throw new ErrorHandler('Selected products are required', 400);
         }
 
-        if (!couponNames) {
-            throw new ErrorHandler('Coupon names are required', 400);
+        if (!couponName) {
+            throw new ErrorHandler('Coupon name is required', 400);
         }
 
-        const couponNameArray = couponNames.split('.');
-        if (couponNameArray.length === 0) {
-            throw new ErrorHandler('Invalid coupon names provided', 400);
+        // Find the coupon by name
+        const coupon = await Coupon.findOne({ name: couponName });
+        if (!coupon) {
+            throw new ErrorHandler('Invalid coupon name provided', 404);
         }
 
-        const coupons = await Coupon.find({ name: { $in: couponNameArray } });
-        console.log(`${coupons} + Moye mmoyee`);
-
-        if (coupons.length === 0) {
-            throw new ErrorHandler('No valid coupons found', 404);
+        // Check coupon expiry date
+        if (new Date(coupon.expiry) < new Date()) {
+            throw new ErrorHandler('Coupon has expired', 400);
         }
+
+        let totalOriginalPrice = 0;
+        let totalDiscountPrice = 0;
+        let isValidCoupon = false;
 
         const productsWithCoupons = await Promise.all(selectedProducts.map(async (selectedProduct) => {
-            const product = await Product.findById(selectedProduct.productId).populate('coupons');
-
-            if (!product) {
-                return null;
+            // Validate product ID
+            if (!mongoose.Types.ObjectId.isValid(selectedProduct.productId)) {
+                throw new ErrorHandler(`Invalid product ID: ${selectedProduct.productId}`, 400);
             }
 
-            let discountPrice = product.price;
-            let appliedCouponIds = [];
+            const product = await Product.findById(selectedProduct.productId);
+            if (!product) {
+                throw new ErrorHandler(`Product not found: ${selectedProduct.productId}`, 404);
+            }
 
-            const productCouponIds = product.coupons.map(coupon => coupon._id.toString());
+            // Calculate total price and discount price for the product considering its quantity
+            const totalPriceForItem = product.price * selectedProduct.quantity;
+            let discountPriceForItem = totalPriceForItem;
 
-            coupons.forEach(coupon => {
-                if (productCouponIds.includes(coupon._id.toString())) {
-                    discountPrice -= (product.price * coupon.discount) / 100;
-                    appliedCouponIds.push(coupon._id);
-                }
-            });
+            if (product.price >= coupon.validateamount) {
+                const discountPercentage = coupon.discount / 100;
+                const discountAmount = product.price * discountPercentage;
+                discountPriceForItem -= discountAmount * selectedProduct.quantity;
+                isValidCoupon = true;
+            }
+
+            totalOriginalPrice += totalPriceForItem;
+            totalDiscountPrice += discountPriceForItem;
 
             return {
                 name: product.name,
-                price: product.price,
+                price: totalPriceForItem,
                 quantity: selectedProduct.quantity,
-                discountPrice,
-                couponIds: appliedCouponIds,
+                discountPrice: discountPriceForItem,
                 productId: product._id,
                 image: product.images // Assuming 'images' is a field in your Product model
             };
         }));
 
-        const filteredProducts = productsWithCoupons.filter(Boolean);
-
-        if (filteredProducts.length === 0) {
-            throw new ErrorHandler('No valid products found for the provided coupons', 404);
+        if (!isValidCoupon) {
+            throw new ErrorHandler('Coupon is not applicable to any selected products', 400);
         }
-
-        const totalDiscountPrice = filteredProducts.reduce((total, product) => total + product.discountPrice * product.quantity, 0);
 
         res.status(200).json({
             success: true,
-            orderItems: filteredProducts,
+            orderItems: productsWithCoupons,
+            totalOriginalPrice,
             totalDiscountPrice
         });
+
     } catch (error) {
         next(error);
     }
@@ -275,13 +392,137 @@ exports.applyCoupons = async (req, res, next) => {
  * @route   POST /api/orders/new
  * @access  Private
  */
+// /**
+//  * @desc    Create a new order
+//  * @route   POST /api/orders/new
+//  * @access  Private
+//  */
+// exports.newOrder = asyncErrorHandler(async (req, res, next) => {
+//     const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice,shippingPrice } = req.body;
+
+//     // Validate input data
+//     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
+//         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
+//     }
+
+//     // Check payment status
+//     if (!paymentInfo.status) {
+//         return next(new ErrorHandler("Payment failed", 400));
+//     }
+
+//     // Check if order with the same paymentInfo already exists
+//     const orderExist = await Order.exists({ paymentInfo });
+
+//     if (orderExist) {
+//         return next(new ErrorHandler("Order Already Placed", 400));
+//     }
+
+//     // Validate each product's coupon ID and discounted price
+//     for (const item of orderItems) {
+//         const product = await Product.findById(item.productId);
+//         if (!product) {
+//             return next(new ErrorHandler("Product not found", 404));
+//         }
+
+//         // Verify if the coupon is applicable to the product
+//         if (item.couponId !== product.couponId) {
+//             return next(new ErrorHandler("Invalid coupon applied for product", 400));
+//         }
+
+//         // Calculate the discounted price for the product if applicable
+//         if (item.discountedPrice) {
+//             const calculatedDiscountedPrice = await calculateDiscountedPrice(item.couponId, product.price);
+//             if (item.discountedPrice !== calculatedDiscountedPrice) {
+//                 return next(new ErrorHandler("Invalid discounted price for product", 400));
+//             }
+//         }
+//     }
+
+//     // Create the order
+//     const order = await Order.create({
+//         shippingInfo,
+//         orderItems,
+//         paymentInfo,
+//         totalPrice,
+//         discountedPrice,
+//         itemsPrice,
+//         taxPrice,
+//         shippingPrice,
+//         paid: true,
+//         paidAt: Date.now(),
+//         user: req.user._id,
+//     });
+
+//     // Update product stock asynchronously for each order item
+//     await Promise.all(order.orderItems.map(async (item) => {
+//         await updateStock(item.productId, item.quantity);
+//         await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
+//     }));
+
+//     // Send email notification about the new order in parallel
+//     try {
+//         await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
+//     } catch (error) {
+//         return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
+//     }
+
+//     res.status(201).json({
+//         success: true,
+//         order,
+//     });
+// });
+// /**
+//  * Check if the coupon is applicable to the product
+//  * @param {String} couponId - ID of the coupon provided by the user
+//  * @param {String} productCouponId - ID of the coupon associated with the product
+//  * @returns {Boolean} true if the coupon is applicable, false otherwise
+//  */
+// async function isCouponApplicable(couponId, productCouponId) {
+//     return couponId === productCouponId;
+// }
+
+// /**
+//  * Calculate discounted price for a product based on applied coupon
+//  * @param {String} couponId - ID of the coupon applied to the product
+//  * @param {Number} productPrice - Original price of the product
+//  * @returns {Number} discounted price
+//  */
+// async function calculateDiscountedPrice(couponId, productPrice) {
+//     const coupon = await Coupon.findById(couponId);
+//     if (!coupon) {
+//         throw new ErrorHandler("Coupon not found", 404);
+//     }
+//     // Apply discount based on coupon type (percentage)
+//     return productPrice - (coupon.amount / 100) * productPrice;
+// }
+
+// /**
+//  * Calculate discounted price for a product based on applied coupon
+//  * @param {String} couponId - ID of the coupon applied to the product
+//  * @param {Number} productPrice - Original price of the product
+//  * @returns {Number} discounted price
+//  */
+
+// // Function to update piecesSold count for a product
+// async function updatePiecesSold(productId, quantity) {
+//     await Product.findByIdAndUpdate(productId, { $inc: { Sold: quantity } });
+// }
+
+// // Function to send order confirmation email
+// async function sendOrderConfirmationEmail(email, orderId, userName) {
+//     await sendEmail({
+//         email: email,
+//         subject: 'New Order Confirmation',
+//         message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
+//     });
+// }
 /**
  * @desc    Create a new order
  * @route   POST /api/orders/new
  * @access  Private
  */
 exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice,shippingPrice } = req.body;
+    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice, shippingPrice } = req.body;
 
     // Validate input data
     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
@@ -300,24 +541,11 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         return next(new ErrorHandler("Order Already Placed", 400));
     }
 
-    // Validate each product's coupon ID and discounted price
+    // Validate existence of each product
     for (const item of orderItems) {
         const product = await Product.findById(item.productId);
         if (!product) {
             return next(new ErrorHandler("Product not found", 404));
-        }
-
-        // Verify if the coupon is applicable to the product
-        if (item.couponId !== product.couponId) {
-            return next(new ErrorHandler("Invalid coupon applied for product", 400));
-        }
-
-        // Calculate the discounted price for the product if applicable
-        if (item.discountedPrice) {
-            const calculatedDiscountedPrice = await calculateDiscountedPrice(item.couponId, product.price);
-            if (item.discountedPrice !== calculatedDiscountedPrice) {
-                return next(new ErrorHandler("Invalid discounted price for product", 400));
-            }
         }
     }
 
@@ -354,41 +582,15 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
         order,
     });
 });
-/**
- * Check if the coupon is applicable to the product
- * @param {String} couponId - ID of the coupon provided by the user
- * @param {String} productCouponId - ID of the coupon associated with the product
- * @returns {Boolean} true if the coupon is applicable, false otherwise
- */
-async function isCouponApplicable(couponId, productCouponId) {
-    return couponId === productCouponId;
-}
 
-/**
- * Calculate discounted price for a product based on applied coupon
- * @param {String} couponId - ID of the coupon applied to the product
- * @param {Number} productPrice - Original price of the product
- * @returns {Number} discounted price
- */
-async function calculateDiscountedPrice(couponId, productPrice) {
-    const coupon = await Coupon.findById(couponId);
-    if (!coupon) {
-        throw new ErrorHandler("Coupon not found", 404);
-    }
-    // Apply discount based on coupon type (percentage)
-    return productPrice - (coupon.amount / 100) * productPrice;
+// Function to update product stock
+async function updateStock(productId, quantity) {
+    await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
 }
-
-/**
- * Calculate discounted price for a product based on applied coupon
- * @param {String} couponId - ID of the coupon applied to the product
- * @param {Number} productPrice - Original price of the product
- * @returns {Number} discounted price
- */
 
 // Function to update piecesSold count for a product
 async function updatePiecesSold(productId, quantity) {
-    await Product.findByIdAndUpdate(productId, { $inc: { Sold: quantity } });
+    await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
 }
 
 // Function to send order confirmation email

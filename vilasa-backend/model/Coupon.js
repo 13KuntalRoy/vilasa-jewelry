@@ -22,6 +22,20 @@ const couponSchema = new mongoose.Schema({
       // Explanation: Custom validation message for invalid coupon names.
     },
   },
+  validateamount:{
+    type: Number,
+    required: true,
+    min: 0,
+    // Explanation: Validate coupon amount. Must be a non-negative number.
+    validate: {
+      validator: function (v) {
+        // Validate coupon amount range
+        return v >= 0;
+      },
+      message: (props) => `${props.value} is not a valid coupon amount!`,
+      // Explanation: Custom validation message for invalid coupon amounts.
+    },
+  },
   // Expiry date of the coupon
   expiry: {
     type: Date,

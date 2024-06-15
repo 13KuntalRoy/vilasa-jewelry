@@ -154,6 +154,11 @@ const productSchema = new mongoose.Schema({
         ref: "User",
         required: true
       },
+      email:{
+        type: String,
+        required: true,
+
+      },
       name: {
         type: String,
         required: true
@@ -208,11 +213,7 @@ const productSchema = new mongoose.Schema({
   },
   offerEndTime: {
     type: Date, // Combine date and time
-  },
-  coupons: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Coupon'
-  }]
+  }
 
 });
 

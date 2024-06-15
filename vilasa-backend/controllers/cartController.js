@@ -1,5 +1,8 @@
 const Cart = require('../model/Cart');
+const Coupon = require('../model/Coupon')
 const Product = require('../model/productModel');
+const mongoose = require('mongoose');
+const ErrorHandler = require("../utils/errorHandler");
 
 // Controller for handling cart-related operations
 
@@ -185,6 +188,91 @@ exports.addToCart = async (req, res) => {
 //     res.status(500).json({ error: 'Internal server error' });
 //   }
 // };
+
+// exports.updateCartQuantity = async (req, res, next) => {
+//   try {
+//       const { productId, quantity, couponName } = req.body;
+//       const userId = req.user._id; // Assuming user ID is available in the request
+
+//       // Validate product ID
+//       if (!mongoose.Types.ObjectId.isValid(productId)) {
+//           throw new ErrorHandler('Invalid product ID', 400);
+//       }
+
+//       // Find the user's cart
+//       let cart = await Cart.findOne({ user: userId }).populate('items.product');
+//       if (!cart) {
+//           throw new ErrorHandler('Cart not found', 404);
+//       }
+
+//       // Find the item in the cart by productId
+//       const cartItem = cart.items.find(item => item.product._id.equals(productId));
+//       if (!cartItem) {
+//           throw new ErrorHandler('Product not found in cart', 404);
+//       }
+
+//       // Update the quantity of the item
+//       if (quantity === 'increase') {
+//           cartItem.quantity += 1; // Increase quantity by one (or any specified amount)
+//       } else if (quantity === 'decrease') {
+//           if (cartItem.quantity === 1) {
+//               // If quantity is 1, remove the item from the cart
+//               cart.items = cart.items.filter(item => !item.product._id.equals(productId));
+//           } else {
+//               cartItem.quantity -= 1; // Decrease quantity by one (or any specified amount)
+//           }
+//       }
+
+//       // Recalculate originalPrice for the item considering new quantity
+//       const product = await Product.findById(productId);
+//       cartItem.originalPrice = product.price * cartItem.quantity;
+
+//       // Calculate the updated totalPrice and totalDiscountPrice of the cart
+//       let totalPrice = 0;
+//       let totalDiscountPrice = 0;
+
+//       // Recalculate totalPrice and apply discount to each item in the cart
+//       for (const item of cart.items) {
+//           const product = await Product.findById(item.product._id);
+
+//           // Calculate itemTotalPrice before applying any discount
+//           let itemTotalPrice = product.price * item.quantity;
+
+//           // Apply coupon to each product's price if coupon is provided and valid for the product
+//           if (couponName) {
+//               const coupon = await Coupon.findOne({ name: couponName });
+//               if (coupon && product.price >= coupon.validateamount && new Date(coupon.expiry) > new Date()) {
+//                   const discountPercentage = coupon.discount / 100;
+//                   const discountedAmount = product.price * discountPercentage;
+//                   const discountedPrice = product.price - discountedAmount;
+//                   itemTotalPrice = discountedPrice * item.quantity;
+//                   item.discountPrice = itemTotalPrice; // Update item's discount price
+//               }
+//           }
+
+//           // Accumulate totalPrice with the original price of the item
+//           totalPrice += product.price * item.quantity;
+
+//           // Accumulate totalDiscountPrice with the discounted price of the item
+//           totalDiscountPrice += itemTotalPrice;
+//       }
+
+//       // Update cart's totalPrice and totalDiscountPrice
+//       cart.totalPrice = totalPrice;
+//       cart.totalDiscountPrice = totalDiscountPrice;
+
+//       // Save the updated cart
+//       await cart.save();
+
+//       // Respond with updated cart details
+//       res.status(200).json({
+//           success: true,
+//           cart
+//       });
+//   } catch (error) {
+//       next(error);
+//   }
+// };
 exports.updateCartItemQuantity = async (req, res) => {
   try {
     const { cartItemId, quantity } = req.body;
@@ -311,10 +399,7 @@ exports.getAllItemsInCart = async (req, res) => {
   try {
     const userId = req.user._id;
     const cart = await Cart.findOne({ user: userId }).populate({
-      path: 'items.product',
-      populate: {
-        path: 'coupons' // Populate coupons for each product in the cart items
-      }
+      path: 'items.product'
     });
 
     if (!cart) {
