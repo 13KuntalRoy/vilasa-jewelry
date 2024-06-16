@@ -1,25 +1,29 @@
 const express = require('express');
 const router = express.Router();
 const {
-    processStripePayment,
-    razorpayWebhook,
-    getPaymentStatus,
-    getAllPayments
+  processStripePayment,
+  createRazorpayOrder,
+  razorpayWebhook,
+  getPaymentStatus,
+  getAllPayments
 } = require('../controllers/paymentController');
 const { isAuthenticatedUser, authorizeRoles } = require("../middleware/auth");
 
 // Routes for payment processing
 
-// Process payment using Stripe
-router.post('/stripe', isAuthenticatedUser, authorizeRoles('user'), processStripePayment);
+router.route('/stripe')
+  .post(isAuthenticatedUser, authorizeRoles('user'), processStripePayment);
 
-// Handle Razorpay webhook response
-router.post('/razorpay/webhook', razorpayWebhook);
+router.route('/razorpay/create-order')
+  .post(createRazorpayOrder);
 
-// Get payment status by order ID
-router.get('/status/:id', isAuthenticatedUser, authorizeRoles('user'), getPaymentStatus);
+router.route('/razorpay/webhook')
+  .post(razorpayWebhook);
 
-// Get all payment information
-router.get('/all', isAuthenticatedUser, authorizeRoles('admin'), getAllPayments);
+router.route('/status/:id')
+  .get(isAuthenticatedUser, authorizeRoles('user'), getPaymentStatus);
+
+router.route('/all')
+  .get(isAuthenticatedUser, authorizeRoles('admin'), getAllPayments);
 
 module.exports = router;

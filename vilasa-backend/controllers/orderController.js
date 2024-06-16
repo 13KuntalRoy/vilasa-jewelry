@@ -5,14 +5,7 @@ const Product = require('../model/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
 const mongoose = require('mongoose');
-const Payment = require("../model/paymentModel");
-const Razorpay = require("razorpay");
-const { v4: uuidv4 } = require("uuid");
-// Initialize Razorpay instance
-const razorpay = new Razorpay({
-    key_id: process.env.RAZORPAY_KEY_ID,
-    key_secret: process.env.RAZORPAY_KEY_SECRET,
-  });
+
 exports.updateCartQuantity = async (req, res, next) => {
     try {
         const { productId, quantity, couponName } = req.body;
@@ -136,8 +129,33 @@ exports.applyCoupons = async (req, res, next) => {
    * @route   POST /api/orders/new
    * @access  Private
    */
-exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-    const {
+  exports.newOrder = asyncErrorHandler(async (req, res, next) => {
+    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice, shippingPrice } = req.body;
+  
+    // Validate input data
+    if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
+      return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
+    }
+  
+    // Check if order with the same paymentInfo already exists
+    const orderExist = await Order.exists({ "paymentInfo.method": paymentInfo.method, "paymentInfo.id": paymentInfo.id });
+  
+    if (orderExist) {
+      return next(new ErrorHandler("Order Already Placed", 400));
+    }
+  
+    // Validate existence of each product and calculate total quantity
+    let totalQuantity = 0;
+    for (const item of orderItems) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return next(new ErrorHandler(`Product not found with id ${item.productId}`, 404));
+      }
+      totalQuantity += item.quantity;
+    }
+  
+    // Create the order
+    const order = await Order.create({
       shippingInfo,
       orderItems,
       paymentInfo,
@@ -146,93 +164,23 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
       itemsPrice,
       taxPrice,
       shippingPrice,
-    } = req.body;
+      totalQuantity,
+      paid: paymentInfo.method === 'cod' ? false : true,
+      paidAt: paymentInfo.method === 'cod' ? null : Date.now(),
+      user: req.user._id,
+    });
   
-    // Validate input data
-    if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
-      return next(new ErrorHandler("Invalid input data", 422));
-    }
-  
-    // Check payment status (for other methods, not needed for Razorpay)
-    if (!paymentInfo.status && paymentInfo.method !== "cod") {
-      return next(new ErrorHandler("Payment failed", 400));
-    }
-  
-    // Check if order with the same paymentInfo already exists (for other methods)
-    if (paymentInfo.method !== "razorpay") {
-      const orderExist = await Order.exists({ paymentInfo });
-      if (orderExist) {
-        return next(new ErrorHandler("Order Already Placed", 400));
-      }
-    }
-  
-    // Validate existence of each product
-    for (const item of orderItems) {
-      const product = await Product.findById(item.productId);
-      if (!product) {
-        return next(new ErrorHandler("Product not found", 404));
-      }
-    }
-  
-    let order;
-    let payment;
-  
-    if (paymentInfo.method === "razorpay") {
-      // Create Razorpay order
-      const razorpayOrder = await createRazorpayOrder(totalPrice);
-  
-      // Create the payment record
-      payment = await Payment.create({
-        orderId: razorpayOrder.id,
-        amount: totalPrice,
-        status: "pending", // Initial status can be pending or similar
-        method: "razorpay",
-        user: req.user._id,
-      });
-  
-      order = await createOrderAndHandleStock(
-        shippingInfo,
-        orderItems,
-        paymentInfo,
-        totalPrice,
-        discountedPrice,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        payment._id,
-        req.user._id
-      );
-    } else if (paymentInfo.method === "cod") {
-      // For Cash on Delivery (COD)
-      payment = await Payment.create({
-        orderId: uuidv4(), // Generate a unique ID for COD orders
-        amount: totalPrice,
-        status: "pending", // Initial status can be pending or similar
-        method: "cod",
-        user: req.user._id,
-      });
-  
-      order = await createOrderAndHandleStock(
-        shippingInfo,
-        orderItems,
-        paymentInfo,
-        totalPrice,
-        discountedPrice,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        payment._id,
-        req.user._id
-      );
-    } else {
-      return next(new ErrorHandler("Invalid payment method", 400));
-    }
+    // Update product stock asynchronously for each order item
+    await Promise.all(order.orderItems.map(async (item) => {
+      await updateStock(item.productId, item.quantity);
+      await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
+    }));
   
     // Send email notification about the new order in parallel
     try {
       await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
     } catch (error) {
-      return next(new ErrorHandler("Failed to send email notification", 500));
+      return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
     }
   
     res.status(201).json({
@@ -241,183 +189,24 @@ exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     });
   });
   
-  // Function to create a Razorpay order
-  const createRazorpayOrder = async (amount) => {
-    const options = {
-      amount: amount * 100, // Amount in smallest currency unit (paise for INR)
-      currency: "INR",
-      receipt: `receipt_order_${Date.now()}`,
-    };
-  
-    try {
-      const razorpayOrder = await razorpay.orders.create(options);
-      return razorpayOrder;
-    } catch (error) {
-      console.error("Error creating Razorpay order:", error);
-      throw new Error("Failed to create Razorpay order");
-    }
-  };
-  
-  // Function to create order and update product stock
-  const createOrderAndHandleStock = async (
-    shippingInfo,
-    orderItems,
-    paymentInfo,
-    totalPrice,
-    discountedPrice,
-    itemsPrice,
-    taxPrice,
-    shippingPrice,
-    paymentId,
-    userId
-  ) => {
-    try {
-      // Create the order
-      const order = await Order.create({
-        shippingInfo,
-        orderItems,
-        paymentInfo,
-        totalPrice,
-        discountedPrice,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        paid: false, // Set paid to false initially
-        user: userId,
-      });
-  
-      // Update product stock asynchronously for each order item
-      await Promise.all(
-        order.orderItems.map(async (item) => {
-          await updateStock(item.productId, item.quantity);
-          await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
-        })
-      );
-  
-      // Link the payment ID to the order
-      order.paymentInfo.id = paymentId;
-      order.paid = true;
-      order.paidAt = Date.now();
-      await order.save();
-  
-      return order;
-    } catch (error) {
-      console.error("Error creating order:", error);
-      throw new Error("Failed to create order");
-    }
-  };
-  
   // Function to update product stock
-//   const updateStock = async (productId, quantity) => {
-//     await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
-//   };
+  async function updateStock(productId, quantity) {
+    await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
+  }
   
   // Function to update piecesSold count for a product
-  const updatePiecesSold = async (productId, quantity) => {
-    await Product.findByIdAndUpdate(productId, {
-      $inc: { piecesSold: quantity },
-    });
-  };
+  async function updatePiecesSold(productId, quantity) {
+    await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
+  }
   
   // Function to send order confirmation email
-  const sendOrderConfirmationEmail = async (email, orderId, userName) => {
+  async function sendOrderConfirmationEmail(email, orderId, userName) {
     await sendEmail({
       email: email,
-      subject: "New Order Confirmation",
+      subject: 'New Order Confirmation',
       message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
     });
-  };
-
-// /**
-//  * @desc    Create a new order
-//  * @route   POST /api/orders/new
-//  * @access  Private
-//  */
-// exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-//     const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice, shippingPrice } = req.body;
-
-//     // Validate input data
-//     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
-//         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
-//     }
-
-//     // Check payment status
-//     if (!paymentInfo.status) {
-//         return next(new ErrorHandler("Payment failed", 400));
-//     }
-
-//     // Check if order with the same paymentInfo already exists
-//     const orderExist = await Order.exists({ paymentInfo });
-
-//     if (orderExist) {
-//         return next(new ErrorHandler("Order Already Placed", 400));
-//     }
-
-//     // Validate existence of each product
-//     for (const item of orderItems) {
-//         const product = await Product.findById(item.productId);
-//         if (!product) {
-//             return next(new ErrorHandler("Product not found", 404));
-//         }
-//     }
-
-//     // Create the order
-//     const order = await Order.create({
-//         shippingInfo,
-//         orderItems,
-//         paymentInfo,
-//         totalPrice,
-//         discountedPrice,
-//         itemsPrice,
-//         taxPrice,
-//         shippingPrice,
-//         paid: true,
-//         paidAt: Date.now(),
-//         user: req.user._id,
-//     });
-
-//     // Update product stock asynchronously for each order item
-//     await Promise.all(order.orderItems.map(async (item) => {
-//         await updateStock(item.productId, item.quantity);
-//         await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
-//     }));
-
-//     // Send email notification about the new order in parallel
-//     try {
-//         await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
-//     } catch (error) {
-//         return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
-//     }
-
-//     res.status(201).json({
-//         success: true,
-//         order,
-//     });
-// });
-
-// // Function to update product stock
-// async function updateStock(productId, quantity) {
-//     await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
-// }
-
-// // Function to update piecesSold count for a product
-// async function updatePiecesSold(productId, quantity) {
-//     await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
-// }
-
-// // Function to send order confirmation email
-// async function sendOrderConfirmationEmail(email, orderId, userName) {
-//     await sendEmail({
-//         email: email,
-//         subject: 'New Order Confirmation',
-//         message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
-//     });
-// }
-// /**
-//  * @desc    Initiate a return for an order
-//  * @route   POST /api/orders/:id/return
-//  * @access  Private
-//  */
+  }
 exports.initiateReturn = asyncErrorHandler(async (req, res, next) => {
     const { returnReason } = req.body;
 
