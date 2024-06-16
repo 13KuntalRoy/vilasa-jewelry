@@ -47,10 +47,26 @@ const paymentSchema = new mongoose.Schema({
     // Explanation: Bank transaction ID provided by the payment gateway. Must be provided.
   },
   // Order ID associated with the payment
+  // orderId: {
+  //   type: String,
+  //   required: true,
+  //   // Explanation: Order ID associated with the payment. Must be provided.
+  // },
   orderId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Order',
+  },
+  razorpayOrderId: {
     type: String,
     required: true,
-    // Explanation: Order ID associated with the payment. Must be provided.
+  },
+  status: {
+    type: String,
+    required: true,
+  },
+  amount: {
+    type: Number,
+    required: true,
   },
   // Transaction amount
   txnAmount: {
