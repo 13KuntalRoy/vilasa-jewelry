@@ -9,12 +9,17 @@ const {
 const { isAuthenticatedUser, authorizeRoles } = require("../middleware/auth");
 
 // Routes for payment processing
-router.route('/stripe')
-    .post(isAuthenticatedUser, authorizeRoles('user'), processStripePayment); // Process payment using Stripe
-router.route('/razorpay/webhook')
-    .post(isAuthenticatedUser,authorizeRoles('user'),razorpayWebhook); // Handle Razorpay webhook response
 
-router.route('/status/:id')
-    .get(isAuthenticatedUser, authorizeRoles('user'), getPaymentStatus); // Get payment status by order ID
-router.route('/getpaymentsinfo').get(getAllPayments);
+// Process payment using Stripe
+router.post('/stripe', isAuthenticatedUser, authorizeRoles('user'), processStripePayment);
+
+// Handle Razorpay webhook response
+router.post('/razorpay/webhook', razorpayWebhook);
+
+// Get payment status by order ID
+router.get('/status/:id', isAuthenticatedUser, authorizeRoles('user'), getPaymentStatus);
+
+// Get all payment information
+router.get('/all', isAuthenticatedUser, authorizeRoles('admin'), getAllPayments);
+
 module.exports = router;

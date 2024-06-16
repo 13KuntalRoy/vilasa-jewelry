@@ -5,6 +5,14 @@ const Product = require('../model/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
 const mongoose = require('mongoose');
+const Payment = require("../model/paymentModel");
+const Razorpay = require("razorpay");
+const { v4: uuidv4 } = require("uuid");
+// Initialize Razorpay instance
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+  });
 exports.updateCartQuantity = async (req, res, next) => {
     try {
         const { productId, quantity, couponName } = req.body;
@@ -44,215 +52,6 @@ exports.updateCartQuantity = async (req, res, next) => {
         next(error);
     }
 };
-
-// exports.applyCoupons = async (req, res, next) => {
-//     try {
-//         const { selectedProducts, couponNames } = req.body;
-
-//         if (!selectedProducts || selectedProducts.length === 0) {
-//             throw new ErrorHandler('Selected products are required', 400);
-//         }
-
-//         if (!couponNames) {
-//             throw new ErrorHandler('Coupon names are required', 400);
-//         }
-
-//         const couponNameArray = couponNames.split('.');
-//         if (couponNameArray.length === 0) {
-//             throw new ErrorHandler('Invalid coupon names provided', 400);
-//         }
-
-//         const coupons = await Coupon.find({ name: { $in: couponNameArray } });
-//         console.log(`${coupons} + Moye mmoyee`);
-
-//         if (coupons.length === 0) {
-//             throw new ErrorHandler('No valid coupons found', 404);
-//         }
-
-//         const productsWithCoupons = await Promise.all(selectedProducts.map(async (selectedProduct) => {
-//             const product = await Product.findById(selectedProduct.productId).populate('coupons');
-
-//             if (!product) {
-//                 return null;
-//             }
-
-//             let discountPrice = product.price;
-//             let appliedCouponIds = [];
-
-//             const productCouponIds = product.coupons.map(coupon => coupon._id.toString());
-
-//             coupons.forEach(coupon => {
-//                 if (productCouponIds.includes(coupon._id.toString())) {
-//                     discountPrice -= (product.price * coupon.discount) / 100;
-//                     appliedCouponIds.push(coupon._id);
-//                 }
-//             });
-
-//             return {
-//                 name: product.name,
-//                 price: product.price,
-//                 quantity: selectedProduct.quantity,
-//                 discountPrice,
-//                 couponIds: appliedCouponIds,
-//                 productId: product._id
-//             };
-//         }));
-
-//         const filteredProducts = productsWithCoupons.filter(Boolean);
-
-//         if (filteredProducts.length === 0) {
-//             throw new ErrorHandler('No valid products found for the provided coupons', 404);
-//         }
-
-//         res.status(200).json({
-//             success: true,
-//             orderItems: filteredProducts
-//         });
-//     } catch (error) {
-//         next(error);
-//     }
-// };
-// exports.applyCoupons = async (req, res, next) => {
-//     try {
-//         const { selectedProducts, couponNames } = req.body;
-
-//         if (!selectedProducts || selectedProducts.length === 0) {
-//             throw new ErrorHandler('Selected products are required', 400);
-//         }
-
-//         if (!couponNames) {
-//             throw new ErrorHandler('Coupon names are required', 400);
-//         }
-
-//         const couponNameArray = couponNames.split('.');
-//         if (couponNameArray.length === 0) {
-//             throw new ErrorHandler('Invalid coupon names provided', 400);
-//         }
-
-//         const coupons = await Coupon.find({ name: { $in: couponNameArray } });
-//         console.log(`${coupons} + Moye mmoyee`);
-
-//         if (coupons.length === 0) {
-//             throw new ErrorHandler('No valid coupons found', 404);
-//         }
-
-//         const productsWithCoupons = await Promise.all(selectedProducts.map(async (selectedProduct) => {
-//             const product = await Product.findById(selectedProduct.productId).populate('coupons');
-
-//             if (!product) {
-//                 return null;
-//             }
-
-//             let discountPrice = product.price;
-//             let appliedCouponIds = [];
-
-//             const productCouponIds = product.coupons.map(coupon => coupon._id.toString());
-
-//             coupons.forEach(coupon => {
-//                 if (productCouponIds.includes(coupon._id.toString())) {
-//                     discountPrice -= (product.price * coupon.discount) / 100;
-//                     appliedCouponIds.push(coupon._id);
-//                 }
-//             });
-
-//             return {
-//                 name: product.name,
-//                 price: product.price,
-//                 quantity: selectedProduct.quantity,
-//                 discountPrice,
-//                 couponIds: appliedCouponIds,
-//                 productId: product._id
-//             };
-//         }));
-
-//         const filteredProducts = productsWithCoupons.filter(Boolean);
-
-//         if (filteredProducts.length === 0) {
-//             throw new ErrorHandler('No valid products found for the provided coupons', 404);
-//         }
-
-//         const totalDiscountPrice = filteredProducts.reduce((total, product) => total + product.discountPrice * product.quantity, 0);
-
-//         res.status(200).json({
-//             success: true,
-//             orderItems: filteredProducts,
-//             totalDiscountPrice
-//         });
-//     } catch (error) {
-//         next(error);
-//     }
-// };
-// exports.applyCoupons = async (req, res, next) => {
-//     try {
-//         const { selectedProducts, couponNames } = req.body;
-
-//         if (!selectedProducts || selectedProducts.length === 0) {
-//             throw new ErrorHandler('Selected products are required', 400);
-//         }
-
-//         if (!couponNames) {
-//             throw new ErrorHandler('Coupon names are required', 400);
-//         }
-
-//         const couponNameArray = couponNames.split('.');
-//         if (couponNameArray.length === 0) {
-//             throw new ErrorHandler('Invalid coupon names provided', 400);
-//         }
-
-//         const coupons = await Coupon.find({ name: { $in: couponNameArray } });
-//         console.log(`${coupons} + Moye mmoyee`);
-
-//         if (coupons.length === 0) {
-//             throw new ErrorHandler('No valid coupons found', 404);
-//         }
-
-//         const productsWithCoupons = await Promise.all(selectedProducts.map(async (selectedProduct) => {
-//             const product = await Product.findById(selectedProduct.productId).populate('coupons');
-
-//             if (!product) {
-//                 return null;
-//             }
-
-//             let discountPrice = product.price;
-//             let appliedCouponIds = [];
-
-//             const productCouponIds = product.coupons.map(coupon => coupon._id.toString());
-
-//             coupons.forEach(coupon => {
-//                 if (productCouponIds.includes(coupon._id.toString())) {
-//                     discountPrice -= (product.price * coupon.discount) / 100;
-//                     appliedCouponIds.push(coupon._id);
-//                 }
-//             });
-
-//             return {
-//                 name: product.name,
-//                 price: product.price,
-//                 quantity: selectedProduct.quantity,
-//                 discountPrice,
-//                 couponIds: appliedCouponIds,
-//                 productId: product._id,
-//                 image: product.images // Assuming 'images' is a field in your Product model
-//             };
-//         }));
-
-//         const filteredProducts = productsWithCoupons.filter(Boolean);
-
-//         if (filteredProducts.length === 0) {
-//             throw new ErrorHandler('No valid products found for the provided coupons', 404);
-//         }
-
-//         const totalDiscountPrice = filteredProducts.reduce((total, product) => total + product.discountPrice * product.quantity, 0);
-
-//         res.status(200).json({
-//             success: true,
-//             orderItems: filteredProducts,
-//             totalDiscountPrice
-//         });
-//     } catch (error) {
-//         next(error);
-//     }
-// };
 exports.applyCoupons = async (req, res, next) => {
     try {
         const { selectedProducts, couponName } = req.body;
@@ -331,19 +130,216 @@ exports.applyCoupons = async (req, res, next) => {
     }
 };
 
+  
+  /**
+   * @desc    Create a new order with Razorpay or Cash on Delivery (COD)
+   * @route   POST /api/orders/new
+   * @access  Private
+   */
+exports.newOrder = asyncErrorHandler(async (req, res, next) => {
+    const {
+      shippingInfo,
+      orderItems,
+      paymentInfo,
+      totalPrice,
+      discountedPrice,
+      itemsPrice,
+      taxPrice,
+      shippingPrice,
+    } = req.body;
+  
+    // Validate input data
+    if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
+      return next(new ErrorHandler("Invalid input data", 422));
+    }
+  
+    // Check payment status (for other methods, not needed for Razorpay)
+    if (!paymentInfo.status && paymentInfo.method !== "cod") {
+      return next(new ErrorHandler("Payment failed", 400));
+    }
+  
+    // Check if order with the same paymentInfo already exists (for other methods)
+    if (paymentInfo.method !== "razorpay") {
+      const orderExist = await Order.exists({ paymentInfo });
+      if (orderExist) {
+        return next(new ErrorHandler("Order Already Placed", 400));
+      }
+    }
+  
+    // Validate existence of each product
+    for (const item of orderItems) {
+      const product = await Product.findById(item.productId);
+      if (!product) {
+        return next(new ErrorHandler("Product not found", 404));
+      }
+    }
+  
+    let order;
+    let payment;
+  
+    if (paymentInfo.method === "razorpay") {
+      // Create Razorpay order
+      const razorpayOrder = await createRazorpayOrder(totalPrice);
+  
+      // Create the payment record
+      payment = await Payment.create({
+        orderId: razorpayOrder.id,
+        amount: totalPrice,
+        status: "pending", // Initial status can be pending or similar
+        method: "razorpay",
+        user: req.user._id,
+      });
+  
+      order = await createOrderAndHandleStock(
+        shippingInfo,
+        orderItems,
+        paymentInfo,
+        totalPrice,
+        discountedPrice,
+        itemsPrice,
+        taxPrice,
+        shippingPrice,
+        payment._id,
+        req.user._id
+      );
+    } else if (paymentInfo.method === "cod") {
+      // For Cash on Delivery (COD)
+      payment = await Payment.create({
+        orderId: uuidv4(), // Generate a unique ID for COD orders
+        amount: totalPrice,
+        status: "pending", // Initial status can be pending or similar
+        method: "cod",
+        user: req.user._id,
+      });
+  
+      order = await createOrderAndHandleStock(
+        shippingInfo,
+        orderItems,
+        paymentInfo,
+        totalPrice,
+        discountedPrice,
+        itemsPrice,
+        taxPrice,
+        shippingPrice,
+        payment._id,
+        req.user._id
+      );
+    } else {
+      return next(new ErrorHandler("Invalid payment method", 400));
+    }
+  
+    // Send email notification about the new order in parallel
+    try {
+      await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
+    } catch (error) {
+      return next(new ErrorHandler("Failed to send email notification", 500));
+    }
+  
+    res.status(201).json({
+      success: true,
+      order,
+    });
+  });
+  
+  // Function to create a Razorpay order
+  const createRazorpayOrder = async (amount) => {
+    const options = {
+      amount: amount * 100, // Amount in smallest currency unit (paise for INR)
+      currency: "INR",
+      receipt: `receipt_order_${Date.now()}`,
+    };
+  
+    try {
+      const razorpayOrder = await razorpay.orders.create(options);
+      return razorpayOrder;
+    } catch (error) {
+      console.error("Error creating Razorpay order:", error);
+      throw new Error("Failed to create Razorpay order");
+    }
+  };
+  
+  // Function to create order and update product stock
+  const createOrderAndHandleStock = async (
+    shippingInfo,
+    orderItems,
+    paymentInfo,
+    totalPrice,
+    discountedPrice,
+    itemsPrice,
+    taxPrice,
+    shippingPrice,
+    paymentId,
+    userId
+  ) => {
+    try {
+      // Create the order
+      const order = await Order.create({
+        shippingInfo,
+        orderItems,
+        paymentInfo,
+        totalPrice,
+        discountedPrice,
+        itemsPrice,
+        taxPrice,
+        shippingPrice,
+        paid: false, // Set paid to false initially
+        user: userId,
+      });
+  
+      // Update product stock asynchronously for each order item
+      await Promise.all(
+        order.orderItems.map(async (item) => {
+          await updateStock(item.productId, item.quantity);
+          await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
+        })
+      );
+  
+      // Link the payment ID to the order
+      order.paymentInfo.id = paymentId;
+      order.paid = true;
+      order.paidAt = Date.now();
+      await order.save();
+  
+      return order;
+    } catch (error) {
+      console.error("Error creating order:", error);
+      throw new Error("Failed to create order");
+    }
+  };
+  
+  // Function to update product stock
+//   const updateStock = async (productId, quantity) => {
+//     await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
+//   };
+  
+  // Function to update piecesSold count for a product
+  const updatePiecesSold = async (productId, quantity) => {
+    await Product.findByIdAndUpdate(productId, {
+      $inc: { piecesSold: quantity },
+    });
+  };
+  
+  // Function to send order confirmation email
+  const sendOrderConfirmationEmail = async (email, orderId, userName) => {
+    await sendEmail({
+      email: email,
+      subject: "New Order Confirmation",
+      message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
+    });
+  };
+
 // /**
 //  * @desc    Create a new order
 //  * @route   POST /api/orders/new
 //  * @access  Private
 //  */
 // exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-//     const { shippingInfo, orderItems, paymentInfo, totalPrice } = req.body;
+//     const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice, shippingPrice } = req.body;
 
 //     // Validate input data
 //     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
 //         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
 //     }
-//     console.log("KKKKKKKKKK",paymentInfo);
 
 //     // Check payment status
 //     if (!paymentInfo.status) {
@@ -356,85 +352,12 @@ exports.applyCoupons = async (req, res, next) => {
 //     if (orderExist) {
 //         return next(new ErrorHandler("Order Already Placed", 400));
 //     }
-//     console.log("Moye moye");
 
-//     // Create the order
-//     const order = await Order.create({
-//         shippingInfo,
-//         orderItems,
-//         paymentInfo,
-//         totalPrice,
-//         paidAt: Date.now(),
-//         user: req.user._id,
-//     });
-//     console.log("lpppppppplp");
-
-//     // Update product stock asynchronously for each order item
-//     await Promise.all(order.orderItems.map(async (item) => {
-//         await updateStock(item.productId, item.quantity);
-//         await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
-//     }));
-
-//     // Send email notification about the new order in parallel
-//     try {
-//         await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
-//     } catch (error) {
-//         return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
-//     }
-
-//     res.status(201).json({
-//         success: true,
-//         order,
-//     });
-// });
-/**
- * @desc    Create a new order
- * @route   POST /api/orders/new
- * @access  Private
- */
-// /**
-//  * @desc    Create a new order
-//  * @route   POST /api/orders/new
-//  * @access  Private
-//  */
-// exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-//     const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice,shippingPrice } = req.body;
-
-//     // Validate input data
-//     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
-//         return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
-//     }
-
-//     // Check payment status
-//     if (!paymentInfo.status) {
-//         return next(new ErrorHandler("Payment failed", 400));
-//     }
-
-//     // Check if order with the same paymentInfo already exists
-//     const orderExist = await Order.exists({ paymentInfo });
-
-//     if (orderExist) {
-//         return next(new ErrorHandler("Order Already Placed", 400));
-//     }
-
-//     // Validate each product's coupon ID and discounted price
+//     // Validate existence of each product
 //     for (const item of orderItems) {
 //         const product = await Product.findById(item.productId);
 //         if (!product) {
 //             return next(new ErrorHandler("Product not found", 404));
-//         }
-
-//         // Verify if the coupon is applicable to the product
-//         if (item.couponId !== product.couponId) {
-//             return next(new ErrorHandler("Invalid coupon applied for product", 400));
-//         }
-
-//         // Calculate the discounted price for the product if applicable
-//         if (item.discountedPrice) {
-//             const calculatedDiscountedPrice = await calculateDiscountedPrice(item.couponId, product.price);
-//             if (item.discountedPrice !== calculatedDiscountedPrice) {
-//                 return next(new ErrorHandler("Invalid discounted price for product", 400));
-//             }
 //         }
 //     }
 
@@ -471,41 +394,15 @@ exports.applyCoupons = async (req, res, next) => {
 //         order,
 //     });
 // });
-// /**
-//  * Check if the coupon is applicable to the product
-//  * @param {String} couponId - ID of the coupon provided by the user
-//  * @param {String} productCouponId - ID of the coupon associated with the product
-//  * @returns {Boolean} true if the coupon is applicable, false otherwise
-//  */
-// async function isCouponApplicable(couponId, productCouponId) {
-//     return couponId === productCouponId;
-// }
 
-// /**
-//  * Calculate discounted price for a product based on applied coupon
-//  * @param {String} couponId - ID of the coupon applied to the product
-//  * @param {Number} productPrice - Original price of the product
-//  * @returns {Number} discounted price
-//  */
-// async function calculateDiscountedPrice(couponId, productPrice) {
-//     const coupon = await Coupon.findById(couponId);
-//     if (!coupon) {
-//         throw new ErrorHandler("Coupon not found", 404);
-//     }
-//     // Apply discount based on coupon type (percentage)
-//     return productPrice - (coupon.amount / 100) * productPrice;
+// // Function to update product stock
+// async function updateStock(productId, quantity) {
+//     await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
 // }
-
-// /**
-//  * Calculate discounted price for a product based on applied coupon
-//  * @param {String} couponId - ID of the coupon applied to the product
-//  * @param {Number} productPrice - Original price of the product
-//  * @returns {Number} discounted price
-//  */
 
 // // Function to update piecesSold count for a product
 // async function updatePiecesSold(productId, quantity) {
-//     await Product.findByIdAndUpdate(productId, { $inc: { Sold: quantity } });
+//     await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
 // }
 
 // // Function to send order confirmation email
@@ -516,96 +413,11 @@ exports.applyCoupons = async (req, res, next) => {
 //         message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
 //     });
 // }
-/**
- * @desc    Create a new order
- * @route   POST /api/orders/new
- * @access  Private
- */
-exports.newOrder = asyncErrorHandler(async (req, res, next) => {
-    const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice, shippingPrice } = req.body;
-
-    // Validate input data
-    if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
-        return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
-    }
-
-    // Check payment status
-    if (!paymentInfo.status) {
-        return next(new ErrorHandler("Payment failed", 400));
-    }
-
-    // Check if order with the same paymentInfo already exists
-    const orderExist = await Order.exists({ paymentInfo });
-
-    if (orderExist) {
-        return next(new ErrorHandler("Order Already Placed", 400));
-    }
-
-    // Validate existence of each product
-    for (const item of orderItems) {
-        const product = await Product.findById(item.productId);
-        if (!product) {
-            return next(new ErrorHandler("Product not found", 404));
-        }
-    }
-
-    // Create the order
-    const order = await Order.create({
-        shippingInfo,
-        orderItems,
-        paymentInfo,
-        totalPrice,
-        discountedPrice,
-        itemsPrice,
-        taxPrice,
-        shippingPrice,
-        paid: true,
-        paidAt: Date.now(),
-        user: req.user._id,
-    });
-
-    // Update product stock asynchronously for each order item
-    await Promise.all(order.orderItems.map(async (item) => {
-        await updateStock(item.productId, item.quantity);
-        await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
-    }));
-
-    // Send email notification about the new order in parallel
-    try {
-        await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
-    } catch (error) {
-        return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
-    }
-
-    res.status(201).json({
-        success: true,
-        order,
-    });
-});
-
-// Function to update product stock
-async function updateStock(productId, quantity) {
-    await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
-}
-
-// Function to update piecesSold count for a product
-async function updatePiecesSold(productId, quantity) {
-    await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
-}
-
-// Function to send order confirmation email
-async function sendOrderConfirmationEmail(email, orderId, userName) {
-    await sendEmail({
-        email: email,
-        subject: 'New Order Confirmation',
-        message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
-    });
-}
-/**
- * @desc    Initiate a return for an order
- * @route   POST /api/orders/:id/return
- * @access  Private
- */
+// /**
+//  * @desc    Initiate a return for an order
+//  * @route   POST /api/orders/:id/return
+//  * @access  Private
+//  */
 exports.initiateReturn = asyncErrorHandler(async (req, res, next) => {
     const { returnReason } = req.body;
 
