@@ -3,7 +3,7 @@ const Razorpay = require("razorpay");
 const Order =require("../model/orderModel")
 const Payment = require("../model/paymentModel");
 const ErrorHandler = require("../utils/errorHandler");
-
+const crypto = require('crypto');
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -67,10 +67,10 @@ exports.createRazorpayOrder = asyncWrapper(async (req, res, next) => {
  * @access  Public
  */
 exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
-  const { payload } = req.body;
+  const payload = req.body;
 
-  // Verify the webhook signature using Razorpay's validateWebhookSignature method
-  const isValidSignature = razorpay.validateWebhookSignature(
+  // Verify the webhook signature using custom validation function
+  const isValidSignature = validateRazorpayWebhookSignature(
     req.headers["x-razorpay-signature"],
     JSON.stringify(payload),
     process.env.RAZORPAY_WEBHOOK_SECRET
@@ -97,6 +97,16 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
     return next(new ErrorHandler("Internal Server Error", 500));
   }
 });
+
+// Custom function to validate Razorpay webhook signature
+function validateRazorpayWebhookSignature(signature, body, secret) {
+  const crypto = require('crypto');
+  const expectedSignature = crypto
+    .createHmac('sha256', secret)
+    .update(body)
+    .digest('hex');
+  return expectedSignature === signature;
+}
 
 const addPayment = async (data) => {
   try {

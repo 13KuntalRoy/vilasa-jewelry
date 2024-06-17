@@ -111,8 +111,7 @@ const orderSchema = new mongoose.Schema({
   paymentInfo: {
     id: {
       type: String,
-      // Explanation: ID of the payment transaction. Required field.
-    },
+      // Explanation: ID of the payment transaction.
     paymentmethod:{
       type: String,
       required: true,
