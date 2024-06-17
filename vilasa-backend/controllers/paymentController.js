@@ -71,8 +71,8 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
 
   // Verify the webhook signature using custom validation function
   const isValidSignature = Razorpay.validateWebhookSignature(
-    req.headers["x-razorpay-signature"],
     JSON.stringify(payload),
+    req.headers["x-razorpay-signature"],
     process.env.RAZORPAY_WEBHOOK_SECRET
   );
 
