@@ -36,11 +36,38 @@ const createChatMessage = asyncHandler(async (req, res) => {
 });
 
 // Get all chat messages for a specific enquiry
+// const getEnquiryChatMessages = asyncHandler(async (req, res) => {
+//   const { enquiryId } = req.params;
+//   try {
+//     const chatMessages = await Chat.find({ enquiry: enquiryId }).sort({ createdAt: 1 });
+    
+//     // Map over the chat messages and replace the picture path with the Cloudinary URL
+//     const chatMessagesWithImageUrl = await Promise.all(chatMessages.map(async (message) => {
+//       if (message.picture) {
+//         // Assuming message.picture contains the Cloudinary image ID or URL
+//         // You may need to adjust this based on how you store the image data
+//         const imageUrl = await cloudinary.url(message.picture); // Get the Cloudinary URL
+//         // Return the message with the Cloudinary URL replaced
+//         return { ...message.toObject(), picture: imageUrl };
+//       }
+//       return message.toObject(); // Return the message as is if no picture is present
+//     }));
+
+//     res.json(chatMessagesWithImageUrl);
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: 'Internal server error.' });
+//   }
+// });
+
 const getEnquiryChatMessages = asyncHandler(async (req, res) => {
   const { enquiryId } = req.params;
   try {
-    const chatMessages = await Chat.find({ enquiry: enquiryId }).sort({ createdAt: 1 });
-    
+    // Fetch all chat messages for the specified enquiry and populate sender and receiver fields
+    const chatMessages = await Chat.find({ enquiry: enquiryId })
+      .populate('sender') // Populate the sender field with the username
+      .populate('receiver'); // Populate the receiver field with the username
+
     // Map over the chat messages and replace the picture path with the Cloudinary URL
     const chatMessagesWithImageUrl = await Promise.all(chatMessages.map(async (message) => {
       if (message.picture) {
@@ -59,7 +86,6 @@ const getEnquiryChatMessages = asyncHandler(async (req, res) => {
     res.status(500).json({ message: 'Internal server error.' });
   }
 });
-
 
 
 // Mark all chat messages with Sam's sender ID and a specific enquiry ID for deletion
