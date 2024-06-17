@@ -11,7 +11,7 @@ router.route('/admin/all').get(isAuthenticatedUser, authorizeRoles ('admin'), or
 router.route('/admin/update/:id').put(isAuthenticatedUser, authorizeRoles ('admin'), orderController.updateOrder);
 router.route('/admin/delete/:id').delete(isAuthenticatedUser, authorizeRoles ('admin'), orderController.deleteOrder);
 router.route('/:id/return/update').put(isAuthenticatedUser, authorizeRoles('admin'), orderController.updateReturnStatus);
-
+router.route('/:id/confirm-payment').put(isAuthenticatedUser, orderController.confirmPayment);
 router.route('/apply-coupons')
     .post(orderController.applyCoupons);
 

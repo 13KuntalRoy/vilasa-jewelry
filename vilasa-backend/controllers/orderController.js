@@ -122,26 +122,15 @@ exports.applyCoupons = async (req, res, next) => {
         next(error);
     }
 };
-
-  
-  /**
-   * @desc    Create a new order with Razorpay or Cash on Delivery (COD)
-   * @route   POST /api/orders/new
-   * @access  Private
-   */
-  exports.newOrder = asyncErrorHandler(async (req, res, next) => {
+// @desc    Create a new order with Razorpay or Cash on Delivery (COD)
+// @route   POST /api/orders/new
+// @access  Private
+exports.newOrder = asyncErrorHandler(async (req, res, next) => {
     const { shippingInfo, orderItems, paymentInfo, totalPrice, discountedPrice, itemsPrice, taxPrice, shippingPrice } = req.body;
   
     // Validate input data
     if (!shippingInfo || !orderItems || !paymentInfo || !totalPrice) {
       return next(new ErrorHandler("Invalid input data", 422)); // 422 for Unprocessable Entity
-    }
-  
-    // Check if order with the same paymentInfo already exists
-    const orderExist = await Order.exists({ "paymentInfo.method": paymentInfo.method, "paymentInfo.id": paymentInfo.id });
-  
-    if (orderExist) {
-      return next(new ErrorHandler("Order Already Placed", 400));
     }
   
     // Validate existence of each product and calculate total quantity
@@ -154,7 +143,7 @@ exports.applyCoupons = async (req, res, next) => {
       totalQuantity += item.quantity;
     }
   
-    // Create the order
+    // Create the order (without orderId initially)
     const order = await Order.create({
       shippingInfo,
       orderItems,
@@ -165,32 +154,17 @@ exports.applyCoupons = async (req, res, next) => {
       taxPrice,
       shippingPrice,
       totalQuantity,
-      paid: paymentInfo.method === 'cod' ? false : true,
-      paidAt: paymentInfo.method === 'cod' ? null : Date.now(),
       user: req.user._id,
     });
-  
-    // Update product stock asynchronously for each order item
-    await Promise.all(order.orderItems.map(async (item) => {
-      await updateStock(item.productId, item.quantity);
-      await updatePiecesSold(item.productId, item.quantity); // Update piecesSold count
-    }));
-  
-    // Send email notification about the new order in parallel
-    try {
-      await sendOrderConfirmationEmail(req.user.email, order._id, req.user.name);
-    } catch (error) {
-      return next(new ErrorHandler("Failed to send email notification", 500)); // 500 for Internal Server Error
-    }
   
     res.status(201).json({
       success: true,
       order,
     });
   });
-  
-  // Function to update product stock
-  async function updateStock(productId, quantity) {
+// Function to update product stock
+// Function to update product stock
+async function updateStock(productId, quantity) {
     await Product.findByIdAndUpdate(productId, { $inc: { stock: -quantity } });
   }
   
@@ -199,12 +173,55 @@ exports.applyCoupons = async (req, res, next) => {
     await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
   }
   
-  // Function to send order confirmation email
-  async function sendOrderConfirmationEmail(email, orderId, userName) {
+  /**
+   * @desc    Confirm payment for an order
+   * @route   PUT /api/orders/:id/confirm-payment
+   * @access  Private
+   */
+  exports.confirmPayment = asyncErrorHandler(async (req, res, next) => {
+    const orderId = req.params.id;
+    const paymentDetails = req.body.paymentDetails; // Assuming payment details are received from Razorpay or COD confirmation
+  
+    // Find the order by orderId
+    const order = await Order.findById(orderId);
+  
+    if (!order) {
+      return next(new ErrorHandler("Order not found", 404));
+    }
+  
+    // Update order details post-payment confirmation
+    order.paymentInfo = paymentDetails;
+    order.paid = true; // Assuming payment is confirmed
+    order.paidAt = Date.now(); // Set the payment timestamp
+  
+    // Save the updated order
+    await order.save();
+  
+    // Update product stock and piecesSold asynchronously for each order item
+    await Promise.all(order.orderItems.map(async (item) => {
+      await updateStock(item.productId, item.quantity);
+      await updatePiecesSold(item.productId, item.quantity);
+    }));
+  
+    // Send payment confirmation email to the user
+    try {
+      await sendPaymentConfirmationEmail(order.user.email, order._id, order.user.name);
+    } catch (error) {
+      return next(new ErrorHandler("Failed to send payment confirmation email", 500));
+    }
+  
+    res.status(200).json({
+      success: true,
+      order,
+    });
+  });
+  
+  // Function to send payment confirmation email
+  async function sendPaymentConfirmationEmail(email, orderId, userName) {
     await sendEmail({
       email: email,
-      subject: 'New Order Confirmation',
-      message: `Dear ${userName}, your order with ID ${orderId} has been successfully placed.`,
+      subject: 'Payment Confirmation',
+      message: `Dear ${userName}, your payment for order ID ${orderId} has been successfully processed.`,
     });
   }
 exports.initiateReturn = asyncErrorHandler(async (req, res, next) => {
