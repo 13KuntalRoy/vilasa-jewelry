@@ -101,6 +101,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
 // Custom function to validate Razorpay webhook signature
 function validateRazorpayWebhookSignature(signature, body, secret) {
   console.log(signature);
+  console.log(body);
   const expectedSignature = crypto
     .createHmac('sha256', secret)
     .update(body)
