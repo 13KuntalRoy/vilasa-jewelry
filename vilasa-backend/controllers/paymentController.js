@@ -4,7 +4,6 @@ const Order =require("../model/orderModel")
 const Payment = require("../model/paymentModel");
 const ErrorHandler = require("../utils/errorHandler");
 const crypto = require('crypto');
-const { validateWebhookSignature } = require('razorpay/dist/utils/razorpay-utils');
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -67,110 +66,29 @@ exports.createRazorpayOrder = asyncWrapper(async (req, res, next) => {
  * @route   POST /api/payments/razorpay/webhook
  * @access  Public
  */
-// exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
-//   const payload = req.body;
-
-//   // Verify the webhook signature using custom validation function
-//   const isValidSignature = validateRazorpayWebhookSignature(
-//     req.headers["x-razorpay-signature"],
-//     JSON.stringify(payload),
-//     process.env.RAZORPAY_WEBHOOK_SECRET
-//   );
-
-//   // If the webhook signature is invalid, return a bad request error
-//   if (!isValidSignature) {
-//     return next(new ErrorHandler("Invalid Webhook Signature", 400));
-//   }
-
-//   const { entity } = payload; // Extract the payment entity from the payload
-
-//   try {
-//     // Save the payment details to the database using the addPayment function
-//     await addPayment(entity);
-
-//     // Handle the payment status based on the 'entity' data received from Razorpay
-//     // Additional handling logic can be added here
-
-//     // Respond with status 200 OK to Razorpay
-//     res.status(200).send("Webhook Received");
-//   } catch (error) {
-//     console.error("Error processing webhook:", error);
-//     return next(new ErrorHandler("Internal Server Error", 500));
-//   }
-// });
-
-// // Custom function to validate Razorpay webhook signature
-// function validateRazorpayWebhookSignature(signature, body, secret) {
-//   const crypto = require('crypto');
-//   const expectedSignature = crypto
-//     .createHmac('sha256', secret)
-//     .update(body)
-//     .digest('hex');
-//   return expectedSignature === signature;
-// }
-
-// const addPayment = async (data) => {
-//   try {
-//     // Validate input data (optional depending on your application's needs)
-//     if (!data.order_id || !data.razorpay_payment_id || !data.amount || !data.currency || !data.status) {
-//       throw new ErrorHandler("Invalid payment data received", 400);
-//     }
-
-//     // Create a new Payment document in the database using the Payment model
-//     const payment = await Payment.create({
-//       orderId: data.order_id,
-//       txnId: data.razorpay_payment_id,
-//       amount: data.amount / 100, // Convert amount from paisa to currency (assuming INR)
-//       currency: data.currency,
-//       status: data.status,
-//       // Additional fields as per your Payment model schema
-//       resultInfo: {
-//         resultStatus: data.status, // Assuming Razorpay status can be directly used
-//         resultCode: data.error_code || '',
-//         resultMsg: data.error_description || '',
-//       },
-//       bankTxnId: data.bank_transaction_id || '',
-//       razorpayOrderId: data.razorpay_order_id,
-//       txnDate: new Date().toISOString(), // Timestamp of the transaction
-//       gatewayName: 'Razorpay', // Assuming it's Razorpay
-//       paymentMode: data.method, // Assuming method represents payment mode
-//       bankName: data.bank || '', // Bank involved in the transaction
-//       mid: data.merchant_id || '', // Merchant ID provided by Razorpay
-//       refundAmt: '0', // Assuming initially no refunds
-//     });
-
-//     // Log successful payment creation (optional)
-//     console.log(`Payment successfully recorded: ${payment}`);
-
-//   } catch (error) {
-//     console.error("Error adding payment:", error);
-//     throw new ErrorHandler("Payment processing failed", 500); // Throw custom error for centralized error handling
-//   }
-// };
-
-
 exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   const payload = req.body;
 
-  // Verify the webhook signature using the Razorpay Node SDK validation function
-  const isValidSignature = validateWebhookSignature(
-    JSON.stringify(payload),
-    req.headers["x-razorpay-signature"],
-    process.env.RAZORPAY_WEBHOOK_SECRET
-  );
-
+  // Verify the webhook signature using custom validation function
+  const razorpay = require("razorpay");
+  const isValidSignature= razorpay.validateWebhookSignature(req.headers["x-razorpay-signature"],
+  JSON.stringify(payload),
+  process.env.RAZORPAY_WEBHOOK_SECRET);
+  // If the webhook signature is invalid, return a bad request error
   if (!isValidSignature) {
     return next(new ErrorHandler("Invalid Webhook Signature", 400));
   }
 
-  const { entity } = payload;
+  const { entity } = payload; // Extract the payment entity from the payload
 
   try {
+    // Save the payment details to the database using the addPayment function
     await addPayment(entity);
 
     // Handle the payment status based on the 'entity' data received from Razorpay
     // Additional handling logic can be added here
 
+    // Respond with status 200 OK to Razorpay
     res.status(200).send("Webhook Received");
   } catch (error) {
     console.error("Error processing webhook:", error);
@@ -180,38 +98,43 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
 
 const addPayment = async (data) => {
   try {
+    // Validate input data (optional depending on your application's needs)
     if (!data.order_id || !data.razorpay_payment_id || !data.amount || !data.currency || !data.status) {
       throw new ErrorHandler("Invalid payment data received", 400);
     }
 
+    // Create a new Payment document in the database using the Payment model
     const payment = await Payment.create({
       orderId: data.order_id,
       txnId: data.razorpay_payment_id,
-      amount: data.amount / 100,
+      amount: data.amount / 100, // Convert amount from paisa to currency (assuming INR)
       currency: data.currency,
       status: data.status,
+      // Additional fields as per your Payment model schema
       resultInfo: {
-        resultStatus: data.status,
+        resultStatus: data.status, // Assuming Razorpay status can be directly used
         resultCode: data.error_code || '',
         resultMsg: data.error_description || '',
       },
       bankTxnId: data.bank_transaction_id || '',
       razorpayOrderId: data.razorpay_order_id,
-      txnDate: new Date().toISOString(),
-      gatewayName: 'Razorpay',
-      paymentMode: data.method,
-      bankName: data.bank || '',
-      mid: data.merchant_id || '',
-      refundAmt: '0',
+      txnDate: new Date().toISOString(), // Timestamp of the transaction
+      gatewayName: 'Razorpay', // Assuming it's Razorpay
+      paymentMode: data.method, // Assuming method represents payment mode
+      bankName: data.bank || '', // Bank involved in the transaction
+      mid: data.merchant_id || '', // Merchant ID provided by Razorpay
+      refundAmt: '0', // Assuming initially no refunds
     });
 
+    // Log successful payment creation (optional)
     console.log(`Payment successfully recorded: ${payment}`);
 
   } catch (error) {
     console.error("Error adding payment:", error);
-    throw new ErrorHandler("Payment processing failed", 500);
+    throw new ErrorHandler("Payment processing failed", 500); // Throw custom error for centralized error handling
   }
 };
+
 /**
  * @desc    Get payment status by order ID
  * @route   GET /api/payments/status/:id
