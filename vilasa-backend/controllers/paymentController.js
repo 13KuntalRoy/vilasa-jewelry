@@ -70,7 +70,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   const payload = req.body;
 
   // Verify the webhook signature using custom validation function
-  const isValidSignature = validateRazorpayWebhookSignature(
+  const isValidSignature = razorpay.validateWebhookSignature(
     req.headers["x-razorpay-signature"],
     JSON.stringify(payload),
     process.env.RAZORPAY_WEBHOOK_SECRET
@@ -99,15 +99,15 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
 });
 
 // Custom function to validate Razorpay webhook signature
-function validateRazorpayWebhookSignature(signature, body, secret) {
-  console.log(signature);
-  console.log(body);
-  const expectedSignature = crypto
-    .createHmac('sha256', secret)
-    .update(body)
-    .digest('hex');
-  return expectedSignature === signature;
-}
+// function validateRazorpayWebhookSignature(signature, body, secret) {
+//   console.log(signature);
+//   console.log(body);
+//   const expectedSignature = crypto
+//     .createHmac('sha256', secret)
+//     .update(body)
+//     .digest('hex');
+//   return expectedSignature === signature;
+// }
 
 
 
