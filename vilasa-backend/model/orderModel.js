@@ -1,4 +1,3 @@
-// module.exports = mongoose.model('Order', orderSchema);
 const mongoose = require('mongoose');
 
 // Return Schema
@@ -33,7 +32,6 @@ const orderSchema = new mongoose.Schema({
     name: {
       type: String,
     },
-
     address: {
       type: String,
       required: true,
@@ -112,7 +110,8 @@ const orderSchema = new mongoose.Schema({
     id: {
       type: String,
       // Explanation: ID of the payment transaction.
-    paymentmethod:{
+    },
+    paymentMethod: {
       type: String,
       required: true,
       // Explanation: Payment method used. Required field.
@@ -131,8 +130,7 @@ const orderSchema = new mongoose.Schema({
     // Explanation: Date and time when the payment was made.
   },
 
-// Price details
-
+  // Price details
   taxPrice: {
     type: Number,
     required: true,
@@ -183,8 +181,8 @@ const orderSchema = new mongoose.Schema({
   returnInitiatedAt: {
     type: Date,
     // Explanation: Date and time when the return was initiated.
-  },}
-);
+  },
+});
 
 // Export the Order model
 module.exports = mongoose.model('Order', orderSchema);
