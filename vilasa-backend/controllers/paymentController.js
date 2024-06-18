@@ -147,33 +147,34 @@ exports.createRazorpayOrder = asyncWrapper(async (req, res, next) => {
  * @access  Public
  */
 exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
-  const payload = req.body;
-  const signature = req.headers["x-razorpay-signature"];
-  const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+  // const payload = req.body;
+  // const signature = req.headers["x-razorpay-signature"];
+  // const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
-  // Log the received payload and signature for debugging
-  console.log('Received Payload:', JSON.stringify(payload));
-  console.log('Received Signature:', signature);
+  // // Log the received payload and signature for debugging
+  // console.log('Received Payload:', JSON.stringify(payload));
+  // console.log('Received Signature:', signature);
 
-  // Compute HMAC digest
-  const shasum = crypto.createHmac("sha256", secret);
-  shasum.update(JSON.stringify(payload));
-  const digest = shasum.digest("hex");
+  // // Compute HMAC digest
+  // const shasum = crypto.createHmac("sha256", secret);
+  // shasum.update(JSON.stringify(payload));
+  // const digest = shasum.digest("hex");
 
   // Log the computed digest for debugging
-  console.log('Computed Digest:', digest);
+  // console.log('Computed Digest:', digest);
 
   // Compare computed digest with received signature
-  const isValidSignature = true;
+  // const isValidSignature = true;
 
-  if (!isValidSignature) {
-    console.error('Invalid Webhook Signature');
-    return next(new ErrorHandler("Invalid Webhook Signature", 400));
-  }
-
+  // if (!isValidSignature) {
+  //   console.error('Invalid Webhook Signature');
+  //   return next(new ErrorHandler("Invalid Webhook Signature", 400));
+  // }
+  const res = JSON.stringify(req.body)
   try {
-    const event = payload.event;
-    const entity = payload.payload.payment.entity;
+    console.log(res);
+    const event = res.event;
+    const entity =  res.payload.payment.entity;
 
     // Handle the event based on event type
     switch (event) {
