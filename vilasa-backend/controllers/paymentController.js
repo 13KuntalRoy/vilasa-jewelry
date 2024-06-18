@@ -150,11 +150,18 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   const payload = req.body;
   const signature = req.headers["x-razorpay-signature"];
 
-  const isValidSignature = razorpay.validateWebhookSignature(
-    JSON.stringify(payload),
-    signature,
-    process.env.RAZORPAY_WEBHOOK_SECRET
-  );
+  // const isValidSignature = razorpay.validateWebhookSignature(
+  //   JSON.stringify(payload),
+  //   signature,
+  //   process.env.RAZORPAY_WEBHOOK_SECRET
+  // );
+  const shasum = crypto.createHmac("sha256", secret);
+  shasum.update(JSON.stringify(payload));
+  const digest = shasum.digest("hex");
+
+  console.log(digest, req.headers["x-razorpay-signature"]);
+
+  isValidSignature=digest === req.headers["x-razorpay-signature"]
 
   if (!isValidSignature) {
     return next(new ErrorHandler("Invalid Webhook Signature", 400));
