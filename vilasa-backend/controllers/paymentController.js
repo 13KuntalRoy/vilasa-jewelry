@@ -296,7 +296,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
         break;
       case 'payment.captured':
         await handlePaymentCaptured(entity);
-        confirmPayment(data.notes.orderId)
+        confirmPayment(entity.notes.orderId)
         break;
       default:
         console.log(`Unhandled event type: ${event}`);
