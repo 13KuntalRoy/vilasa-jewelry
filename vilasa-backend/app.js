@@ -163,6 +163,20 @@ app.use(cors({
     credentials:true
 }));
 
+app.get('/api/pincodeserviceable', async (req, res) => {
+  try {
+    const pincode = req.query.pincode;
+    const response = await axios.get(`https://app.shipway.com/api/pincodeserviceable?pincode=${pincode}&payment_type=P`, {
+      headers: {
+        'Authorization': req.headers.authorization  // Forward the Authorization header
+      }
+    });
+    res.json(response.data);
+  } catch (error) {
+    console.error('Error proxying request:', error);
+    res.status(500).json({ error: 'Failed to proxy request' });
+  }
+});
 // Connect to MongoDB
 connectDatabase();
 
