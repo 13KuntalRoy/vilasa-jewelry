@@ -339,18 +339,18 @@ const addPayment = async (data) => {
       status: data.status,
       resultInfo: {
         resultStatus: data.status,
-        resultCode: data.error_code || null,
-        resultMsg: data.error_description || null,
+        resultCode: data.error_code || "NA",
+        resultMsg: data.error_description || "NA",
       },
-      bankTxnId: data.bank_transaction_id ||null,
+      bankTxnId: data.bank_transaction_id ||"NA",
       razorpayOrderId: data.order_id,
       txnDate: new Date().toISOString(),
       gatewayName: 'Razorpay',
       userId:data.notes.userId,
 
       paymentMode: data.method,
-      bankName: data.bank || null,
-      mid: data.merchant_id || null,
+      bankName: data.bank || "NA",
+      mid: data.merchant_id || "NA",
       refundAmt: '0',
     });
 

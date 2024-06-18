@@ -37,13 +37,13 @@ const paymentSchema = new mongoose.Schema({
   // Transaction ID provided by the payment gateway
   txnId: {
     type: String,
-    required: true,
+    // required: true,
     // Explanation: Transaction ID provided by the payment gateway. Must be provided.
   },
   // Bank transaction ID provided by the payment gateway
   bankTxnId: {
     type: String,
-    required: true,
+    // required: true,
     // Explanation: Bank transaction ID provided by the payment gateway. Must be provided.
   },
   // Order ID associated with the payment
@@ -71,13 +71,13 @@ const paymentSchema = new mongoose.Schema({
   // Transaction amount
   txnAmount: {
     type: String,
-    required: true,
+    // required: true,
     // Explanation: Transaction amount. Must be provided.
   },
   // Type of transaction (e.g., Debit, Credit)
   txnType: {
     type: String,
-    required: true,
+    // required: true,
     // Explanation: Type of transaction (e.g., Debit, Credit). Must be provided.
   },
   // Name of the payment gateway used
@@ -89,13 +89,13 @@ const paymentSchema = new mongoose.Schema({
   // Name of the bank involved in the transaction
   bankName: {
     type: String,
-    required: true,
+    // required: true,
     // Explanation: Name of the bank involved in the transaction. Must be provided.
   },
   // Merchant ID provided by the payment gateway
   mid: {
     type: String,
-    required: true,
+    // required: true,
     // Explanation: Merchant ID provided by the payment gateway. Must be provided.
   },
   // Payment mode (e.g., Credit Card, Net Banking)
