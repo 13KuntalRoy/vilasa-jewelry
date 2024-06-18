@@ -4,6 +4,7 @@ const Order =require("../model/orderModel")
 const Payment = require("../model/paymentModel");
 const ErrorHandler = require("../utils/errorHandler");
 const crypto = require('crypto');
+const { confirmPayment } = require("./orderController");
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -295,6 +296,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
         break;
       case 'payment.captured':
         await handlePaymentCaptured(entity);
+        confirmPayment(data.notes.orderId)
         break;
       default:
         console.log(`Unhandled event type: ${event}`);
