@@ -170,11 +170,11 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   //   console.error('Invalid Webhook Signature');
   //   return next(new ErrorHandler("Invalid Webhook Signature", 400));
   // }
-  const res = JSON.stringify(req.body)
+  const responce = JSON.stringify(req.body)
   try {
-    console.log(res);
-    const event = res.event;
-    const entity =  res.payload.payment.entity;
+    console.log(responce);
+    const event = responce.event;
+    const entity =  responce.payload.payment.entity;
 
     // Handle the event based on event type
     switch (event) {
