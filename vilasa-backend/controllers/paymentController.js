@@ -146,37 +146,146 @@ exports.createRazorpayOrder = asyncWrapper(async (req, res, next) => {
  * @route   POST /api/payments/razorpay/webhook
  * @access  Public
  */
+// exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
+//   // const payload = req.body;
+//   // const signature = req.headers["x-razorpay-signature"];
+//   // const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
+
+//   // // Log the received payload and signature for debugging
+//   // console.log('Received Payload:', JSON.stringify(payload));
+//   // console.log('Received Signature:', signature);
+
+//   // // Compute HMAC digest
+//   // const shasum = crypto.createHmac("sha256", secret);
+//   // shasum.update(JSON.stringify(payload));
+//   // const digest = shasum.digest("hex");
+
+//   // Log the computed digest for debugging
+//   // console.log('Computed Digest:', digest);
+
+//   // Compare computed digest with received signature
+//   // const isValidSignature = true;
+
+//   // if (!isValidSignature) {
+//   //   console.error('Invalid Webhook Signature');
+//   //   return next(new ErrorHandler("Invalid Webhook Signature", 400));
+//   // }
+//   const response = JSON.stringify(req.body)
+//   try {
+//     console.log(response);
+//     const event = response.event;
+//     const entity =  response?.payload?.payment?.entity;
+
+//     // Handle the event based on event type
+//     switch (event) {
+//       case 'payment.authorized':
+//         await handlePaymentAuthorized(entity);
+//         break;
+//       case 'payment.failed':
+//         await handlePaymentFailed(entity);
+//         break;
+//       case 'payment.captured':
+//         await handlePaymentCaptured(entity);
+//         break;
+//       default:
+//         console.log(`Unhandled event type: ${event}`);
+//     }
+
+//     // Respond with success message
+//     res.status(200).send("Webhook Received");
+//   } catch (error) {
+//     console.error("Error processing webhook:", error);
+//     return next(new ErrorHandler("Internal Server Error", 500));
+//   }
+// });
+
+// /**
+//  * @desc    Handle payment authorized event
+//  * @param   {Object} entity - Payment entity
+//  */
+// const handlePaymentAuthorized = async (entity) => {
+//   console.log('Payment Authorized:', entity);
+//   await addPayment(entity);
+// };
+
+// /**
+//  * @desc    Handle payment failed event
+//  * @param   {Object} entity - Payment entity
+//  */
+// const handlePaymentFailed = async (entity) => {
+//   console.log('Payment Failed:', entity);
+//   await addPayment(entity);
+// };
+
+// /**
+//  * @desc    Handle payment captured event
+//  * @param   {Object} entity - Payment entity
+//  */
+// const handlePaymentCaptured = async (entity) => {
+//   console.log('Payment Captured:', entity);
+//   await addPayment(entity);
+// };
+
+// /**
+//  * @desc    Handle order paid event
+//  * @param   {Object} entity - Payment entity
+//  */
+// const handleOrderPaid = async (entity) => {
+//   console.log('Order Paid:', entity);
+//   await addPayment(entity);
+// };
+
+// /**
+//  * @desc    Add payment to database
+//  * @param   {Object} data - Payment data
+//  */
+// const addPayment = async (data) => {
+//   try {
+//     // Validate required payment data
+//     if (!data.order_id || !data.id || !data.amount || !data.currency || !data.status) {
+//       throw new ErrorHandler("Invalid payment data received", 400);
+//     }
+
+//     // Create Payment document in the database using Payment model
+//     const payment = await Payment.create({
+//       orderId: data.order_id,
+//       txnId: data.id,
+//       amount: data.amount / 100, // Convert amount from paisa to currency
+//       currency: data.currency,
+//       status: data.status,
+//       resultInfo: {
+//         resultStatus: data.status,
+//         resultCode: data.error_code || '',
+//         resultMsg: data.error_description || '',
+//       },
+//       bankTxnId: data.bank_transaction_id || '',
+//       razorpayOrderId: data.order_id,
+//       txnDate: new Date().toISOString(),
+//       gatewayName: 'Razorpay',
+//       paymentMode: data.method,
+//       bankName: data.bank || '',
+//       mid: data.merchant_id || '',
+//       refundAmt: '0',
+//     });
+
+//     // Log successful payment creation
+//     console.log(`Payment successfully recorded: ${payment}`);
+//   } catch (error) {
+//     console.error("Error adding payment:", error);
+//     throw new ErrorHandler("Payment processing failed", 500);
+//   }
+// };
+
 exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
-  // const payload = req.body;
-  // const signature = req.headers["x-razorpay-signature"];
-  // const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
-
-  // // Log the received payload and signature for debugging
-  // console.log('Received Payload:', JSON.stringify(payload));
-  // console.log('Received Signature:', signature);
-
-  // // Compute HMAC digest
-  // const shasum = crypto.createHmac("sha256", secret);
-  // shasum.update(JSON.stringify(payload));
-  // const digest = shasum.digest("hex");
-
-  // Log the computed digest for debugging
-  // console.log('Computed Digest:', digest);
-
-  // Compare computed digest with received signature
-  // const isValidSignature = true;
-
-  // if (!isValidSignature) {
-  //   console.error('Invalid Webhook Signature');
-  //   return next(new ErrorHandler("Invalid Webhook Signature", 400));
-  // }
-  const response = JSON.stringify(req.body)
   try {
-    console.log(response);
-    const event = response?.event;
-    const entity =  response?.payload?.payment?.entity;
+    const { event, payload } = req.body;
 
-    // Handle the event based on event type
+    if (!event || !payload) {
+      return next(new ErrorHandler("Invalid payload structure", 400));
+    }
+
+    const entity = payload.payment.entity;
+
     switch (event) {
       case 'payment.authorized':
         await handlePaymentAuthorized(entity);
@@ -191,7 +300,6 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
         console.log(`Unhandled event type: ${event}`);
     }
 
-    // Respond with success message
     res.status(200).send("Webhook Received");
   } catch (error) {
     console.error("Error processing webhook:", error);
@@ -199,58 +307,31 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   }
 });
 
-/**
- * @desc    Handle payment authorized event
- * @param   {Object} entity - Payment entity
- */
 const handlePaymentAuthorized = async (entity) => {
   console.log('Payment Authorized:', entity);
   await addPayment(entity);
 };
 
-/**
- * @desc    Handle payment failed event
- * @param   {Object} entity - Payment entity
- */
 const handlePaymentFailed = async (entity) => {
   console.log('Payment Failed:', entity);
   await addPayment(entity);
 };
 
-/**
- * @desc    Handle payment captured event
- * @param   {Object} entity - Payment entity
- */
 const handlePaymentCaptured = async (entity) => {
   console.log('Payment Captured:', entity);
   await addPayment(entity);
 };
 
-/**
- * @desc    Handle order paid event
- * @param   {Object} entity - Payment entity
- */
-const handleOrderPaid = async (entity) => {
-  console.log('Order Paid:', entity);
-  await addPayment(entity);
-};
-
-/**
- * @desc    Add payment to database
- * @param   {Object} data - Payment data
- */
 const addPayment = async (data) => {
   try {
-    // Validate required payment data
     if (!data.order_id || !data.id || !data.amount || !data.currency || !data.status) {
       throw new ErrorHandler("Invalid payment data received", 400);
     }
 
-    // Create Payment document in the database using Payment model
     const payment = await Payment.create({
       orderId: data.order_id,
       txnId: data.id,
-      amount: data.amount / 100, // Convert amount from paisa to currency
+      amount: data.amount / 100,
       currency: data.currency,
       status: data.status,
       resultInfo: {
@@ -268,7 +349,6 @@ const addPayment = async (data) => {
       refundAmt: '0',
     });
 
-    // Log successful payment creation
     console.log(`Payment successfully recorded: ${payment}`);
   } catch (error) {
     console.error("Error adding payment:", error);
