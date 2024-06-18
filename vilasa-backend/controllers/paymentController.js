@@ -10,7 +10,14 @@ const razorpay = new Razorpay({
   key_secret: process.env.RAZORPAY_KEY_SECRET,
 });
 
+const app = express();
 
+// Middleware to capture raw body
+app.use(bodyParser.json({
+  verify: (req, res, buf) => {
+    req.rawBody = buf.toString();
+  }
+}));
 
 /**
  * @desc    Create Razorpay order
@@ -147,7 +154,8 @@ exports.createRazorpayOrder = asyncWrapper(async (req, res, next) => {
  * @access  Public
  */
 exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
-  const payload = req.body;
+  // const payload = req.body;
+  const payload = req.rawBody 
   const signature = req.headers["x-razorpay-signature"];
   const secret = process.env.RAZORPAY_WEBHOOK_SECRET;
 
