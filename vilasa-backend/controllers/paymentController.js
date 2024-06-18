@@ -174,7 +174,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   try {
     console.log(responce);
     const event = responce.event;
-    const entity =  responce.payload.payment.entity;
+    const entity =  response?.payload?.payment?.entity;
 
     // Handle the event based on event type
     switch (event) {
