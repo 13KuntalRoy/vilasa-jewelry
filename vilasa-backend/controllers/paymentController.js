@@ -4,7 +4,6 @@ const Order =require("../model/orderModel")
 const Payment = require("../model/paymentModel");
 const ErrorHandler = require("../utils/errorHandler");
 const crypto = require('crypto');
-const { log } = require("util");
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
   key_id: process.env.RAZORPAY_KEY_ID,
@@ -151,7 +150,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
   const payload = req.body;
   const signature = req.headers["x-razorpay-signature"];
 
-  const isValidSignature = Razorpay.validateWebhookSignature(
+  const isValidSignature = razorpay.validateWebhookSignature(
     JSON.stringify(payload),
     signature,
     process.env.RAZORPAY_WEBHOOK_SECRET
