@@ -331,7 +331,7 @@ const addPayment = async (data) => {
     }
 
     const payment = await Payment.create({
-      orderId: data.order_id,
+      orderId: data.notes.orderId,
       txnId: data.id,
       amount: data.amount / 100,
       currency: data.currency,
