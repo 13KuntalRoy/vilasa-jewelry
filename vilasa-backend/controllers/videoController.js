@@ -39,7 +39,7 @@ exports.addVideo = async (req, res) => {
 // Get all videos
 exports.getAllVideos = async (req, res) => {
   try {
-    const videos = await Video.find().populate('product user', 'name');
+    const videos = await Video.find().populate('product user');
     res.status(200).json({
       success: true,
       videos
@@ -55,7 +55,7 @@ exports.getAllVideos = async (req, res) => {
 // Get a single video by ID
 exports.getVideoById = async (req, res) => {
   try {
-    const video = await Video.findById(req.params.id).populate('product user', 'name');
+    const video = await Video.findById(req.params.id).populate('product user');
     if (!video) {
       return res.status(404).json({
         success: false,
