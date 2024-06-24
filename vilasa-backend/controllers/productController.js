@@ -744,7 +744,9 @@ exports.getProductReviews = asyncErrorHandler(async (req, res, next) => {
   try {
     // Find the product by ID
     const productId = req.params.id;
-    const product = await ProductModel.findById(productId);
+    const product = await ProductModel.findById(productId).populate({
+      path: 'reviews.user',
+    });
 
     // Check if the product exists
     if (!product) {

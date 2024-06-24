@@ -39,6 +39,10 @@ const orderSchema = new mongoose.Schema({
       required: true,
       // Explanation: Shipping address. Required field.
     },
+    Address2:{
+      type: String,
+      required:true,
+    },
     city: {
       type: String,
       required: true,
@@ -109,9 +113,13 @@ const orderSchema = new mongoose.Schema({
 
   // Payment information
   paymentInfo: {
-    id: {
-      type: String,
-      // Explanation: ID of the payment transaction. Required field.
+    // id: {
+    //   type: String,
+    //   // Explanation: ID of the payment transaction. Required field.
+    // },
+    id:{
+    type:mongoose.Schema.Types.ObjectId,
+    ref:'Payment',
     },
     paymentmethod:{
       type: String,
