@@ -235,7 +235,7 @@ exports.confirmPayment = async (orderId,next, res) => {
   
       // Assuming paymentDetails are received from Razorpay or COD confirmation
       order.paymentInfo.id = payment._id;
-      order.paymentInfo.paymentmethod="paid"
+      order.paymentInfo.status = "Completed"
       order.paid = true; // Assuming payment is confirmed
       order.paidAt = Date.now(); // Set the payment timestamp
   
@@ -249,6 +249,9 @@ exports.confirmPayment = async (orderId,next, res) => {
   
       // Send payment confirmation email to the user
       try {
+        "++++++++++++"
+        console.log(order);
+        "+++++++++++"
         await sendPaymentConfirmationEmail(order.user.email, order._id, order.user.name);
       } catch (error) {
         return next(new ErrorHandler("Failed to send payment confirmation email", 500));
