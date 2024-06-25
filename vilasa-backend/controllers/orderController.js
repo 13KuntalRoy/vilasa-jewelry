@@ -188,7 +188,7 @@ async function updateStock(productId, quantity) {
     if (!order) {
       return next(new ErrorHandler("Order not found", 404));
     }
-  
+    console.log(paymentDetails);
     // Update order details post-payment confirmation
     order.paymentInfo = paymentDetails;
     order.paid = true; // Assuming payment is confirmed
