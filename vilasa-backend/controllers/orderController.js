@@ -599,3 +599,4 @@ exports.processReturn = asyncErrorHandler(async (req, res, next) => {
         order,
     });
 });
+module.exports = confirmPayment;
