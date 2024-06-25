@@ -220,7 +220,7 @@ async function updateStock(productId, quantity) {
 //       order,
 //     });
 //   });
-async function confirmPayment(orderId,next, res){
+exports.confirmPayment = asyncErrorHandler(async (orderId) => {
     try {
       const order = await Order.findById(orderId);
       const payment = await Payment.findOne({ orderId: orderId });
@@ -235,7 +235,7 @@ async function confirmPayment(orderId,next, res){
   
       // Assuming paymentDetails are received from Razorpay or COD confirmation
       order.paymentInfo.id = payment._id;
-      order.paymentInfo.status = "Completed"
+      order.paymentInfo.status = "Completed";
       order.paid = true; // Assuming payment is confirmed
       order.paidAt = Date.now(); // Set the payment timestamp
   
@@ -249,19 +249,20 @@ async function confirmPayment(orderId,next, res){
   
       // Send payment confirmation email to the user
       try {
-        "-----------------"
+        console.log("-----------------");
         console.log(order);
-        "-----------------"
+        console.log("-----------------");
         await sendPaymentConfirmationEmail(order.shippingInfo.email, order._id, order.shippingInfo.name);
       } catch (error) {
+        console.error("Failed to send payment confirmation email:", error);
         return next(new ErrorHandler("Failed to send payment confirmation email", 500));
       }
-
     } catch (error) {
       console.error("Error confirming payment:", error);
       return next(new ErrorHandler("Internal Server Error", 500));
     }
-  };
+  });
+  
    
   // Function to send payment confirmation email
   async function sendPaymentConfirmationEmail(email, orderId, userName) {
@@ -599,4 +600,3 @@ exports.processReturn = asyncErrorHandler(async (req, res, next) => {
         order,
     });
 });
-module.exports = confirmPayment;
