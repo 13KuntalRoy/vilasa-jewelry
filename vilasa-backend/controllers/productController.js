@@ -683,7 +683,7 @@ exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
     }
 
     // Validate presence of required fields
-    if (!ratings || !comment || !name || !email) {
+    if (!ratings || !comment) {
       return next(new ErrorHandler("Please provide all required fields", 400));
     }
 
@@ -730,6 +730,7 @@ exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
       success: true,
     });
   } catch (error) {
+    console.log(error);
     return next(new ErrorHandler("Failed to create or update product review", 500));
   }
 });
