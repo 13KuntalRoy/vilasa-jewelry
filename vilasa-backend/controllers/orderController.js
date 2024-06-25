@@ -181,12 +181,12 @@ async function updateStock(productId, quantity) {
    */
   exports.confirmPayment = asyncErrorHandler(async (orderId) => {
 
-    const orderId = orderId;
+    const orderid = orderId;
     // const paymentDetails = req.body.paymentDetails; // Assuming payment details are received from Razorpay or COD confirmation
   
     // Find the order by orderId
-    const order = await Order.findById(orderId);
-    const payment = await payment.findOne(orderId);
+    const order = await Order.findById(orderid);
+    const payment = await payment.findOne(orderid);
     console.log(order);
     console.log(payment);
   
