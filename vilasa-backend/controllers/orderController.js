@@ -179,7 +179,8 @@ async function updateStock(productId, quantity) {
    * @access  Private
    */
   exports.confirmPayment = asyncErrorHandler(async (req, res, next) => {
-    const orderId = req.params.id;
+    console.log(req);
+    const orderId = req;
     const paymentDetails = req.body.paymentDetails; // Assuming payment details are received from Razorpay or COD confirmation
   
     // Find the order by orderId
