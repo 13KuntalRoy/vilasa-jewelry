@@ -5,7 +5,7 @@ const Product = require('../model/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
 const mongoose = require('mongoose');
-const payment = require('../model/paymentModel')
+const Payment = require('../model/paymentModel')
 
 exports.updateCartQuantity = async (req, res, next) => {
     try {
@@ -186,7 +186,7 @@ async function updateStock(productId, quantity) {
   
     // Find the order by orderId
     const order = await Order.findById(orderid);
-    const payment = await payment.findOne(orderid);
+    const payment = await Payment.findOne(orderid);
     console.log(order);
     console.log(payment);
   
