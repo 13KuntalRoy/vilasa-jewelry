@@ -252,7 +252,7 @@ exports.confirmPayment = async (orderId,next, res) => {
         "++++++++++++"
         console.log(order);
         "+++++++++++"
-        await sendPaymentConfirmationEmail(order.user.email, order._id, order.user.name);
+        await sendPaymentConfirmationEmail(order.shippingInfo.email, order._id, order.shippingInfo.name);
       } catch (error) {
         return next(new ErrorHandler("Failed to send payment confirmation email", 500));
       }
