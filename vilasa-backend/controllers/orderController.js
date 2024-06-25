@@ -249,9 +249,9 @@ async function confirmPayment(orderId,next, res){
   
       // Send payment confirmation email to the user
       try {
-        "++++++++++++"
+        "-----------------"
         console.log(order);
-        "+++++++++++"
+        "-----------------"
         await sendPaymentConfirmationEmail(order.shippingInfo.email, order._id, order.shippingInfo.name);
       } catch (error) {
         return next(new ErrorHandler("Failed to send payment confirmation email", 500));
