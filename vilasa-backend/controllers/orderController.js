@@ -5,6 +5,7 @@ const Product = require('../model/productModel');
 const ErrorHandler = require('../utils/errorHandler');
 const sendEmail = require('../utils/sendEmail');
 const mongoose = require('mongoose');
+const payment = require('../model/paymentModel')
 
 exports.updateCartQuantity = async (req, res, next) => {
     try {
@@ -178,13 +179,16 @@ async function updateStock(productId, quantity) {
    * @route   PUT /api/orders/:id/confirm-payment
    * @access  Private
    */
-  exports.confirmPayment = asyncErrorHandler(async (req, res, next) => {
-    console.log(req);
-    const orderId = req;
-    const paymentDetails = req.body.paymentDetails; // Assuming payment details are received from Razorpay or COD confirmation
+  exports.confirmPayment = asyncErrorHandler(async (orderId) => {
+
+    const orderId = orderId;
+    // const paymentDetails = req.body.paymentDetails; // Assuming payment details are received from Razorpay or COD confirmation
   
     // Find the order by orderId
     const order = await Order.findById(orderId);
+    const payment = await payment.findOne(orderId);
+    console.log(order);
+    console.log(payment);
   
     if (!order) {
       return next(new ErrorHandler("Order not found", 404));
