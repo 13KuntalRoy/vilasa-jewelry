@@ -220,7 +220,7 @@ async function updateStock(productId, quantity) {
 //       order,
 //     });
 //   });
-exports.confirmPayment = async (orderId,next, res) => {
+async function confirmPayment(orderId,next, res){
     try {
       const order = await Order.findById(orderId);
       const payment = await Payment.findOne({ orderId: orderId });
@@ -256,11 +256,7 @@ exports.confirmPayment = async (orderId,next, res) => {
       } catch (error) {
         return next(new ErrorHandler("Failed to send payment confirmation email", 500));
       }
-  
-      res.status(200).json({
-        success: true,
-        order,
-      });
+
     } catch (error) {
       console.error("Error confirming payment:", error);
       return next(new ErrorHandler("Internal Server Error", 500));
