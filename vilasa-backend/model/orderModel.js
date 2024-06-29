@@ -142,19 +142,25 @@ const orderSchema = new mongoose.Schema({
 orderSchema.pre('save', async function (next) {
   const order = this;
   if (order.isNew) {
-    const date = new Date();
-    const formattedDate = `${date.getFullYear()}${(date.getMonth() + 1)
-      .toString()
-      .padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
+    try {
+      const date = new Date();
+      const formattedDate = `${date.getFullYear()}${(date.getMonth() + 1)
+        .toString()
+        .padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}`;
 
-    const counter = await Counter.findByIdAndUpdate(
-      { _id: 'orderId' },
-      { $inc: { seq: 1 } },
-      { new: true, upsert: true }
-    );
+      const counter = await Counter.findByIdAndUpdate(
+        { _id: 'orderId' },
+        { $inc: { seq: 1 } },
+        { new: true, upsert: true }
+      );
 
-    const sequence = counter.seq.toString().padStart(5, '0');
-    order.orderId = `ORD-SAIYLI-${formattedDate}-${sequence}`;
+      const sequence = counter.seq.toString().padStart(5, '0');
+      order.orderId = `ORD-SAIYLI-${formattedDate}-${sequence}`;
+      console.log('Generated orderId:', order.orderId);
+    } catch (error) {
+      console.error('Error generating orderId:', error);
+      next(error);
+    }
   }
   next();
 });
