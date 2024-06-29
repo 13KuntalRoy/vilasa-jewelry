@@ -21,12 +21,19 @@ const returnSchema = new mongoose.Schema({
   },
 });
 
+// Custom ID Schema
+const customIdSchema = new mongoose.Schema({
+  customString: {
+    type: String,
+    required: true,
+  },
+});
+
 // Order Schema
 const orderSchema = new mongoose.Schema({
   _id: {
-    type: String,
+    type: customIdSchema, // Define _id as an object with a nested customString
     unique: true,
-    // Explanation: Custom order ID generated from a sequence.
   },
   shippingInfo: {
     name: {
@@ -154,7 +161,7 @@ orderSchema.pre('save', async function (next) {
     );
 
     const sequence = counter.seq.toString().padStart(5, '0');
-    order._id = `ORD-SAIYLI-${formattedDate}-${sequence}`;
+    order._id = { customString: `ORD-SAIYLI-${formattedDate}-${sequence}` };
   }
   next();
 });
