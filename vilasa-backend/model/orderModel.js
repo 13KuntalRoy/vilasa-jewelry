@@ -23,7 +23,7 @@ const returnSchema = new mongoose.Schema({
 
 // Order Schema
 const orderSchema = new mongoose.Schema({
-  orderId: {
+  _id: {
     type: String,
     unique: true,
     // Explanation: Custom order ID generated from a sequence.
@@ -154,7 +154,7 @@ orderSchema.pre('save', async function (next) {
     );
 
     const sequence = counter.seq.toString().padStart(5, '0');
-    order.orderId = `ORD-SAIYLI-${formattedDate}-${sequence}`;
+    order._id = `ORD-SAIYLI-${formattedDate}-${sequence}`;
   }
   next();
 });
