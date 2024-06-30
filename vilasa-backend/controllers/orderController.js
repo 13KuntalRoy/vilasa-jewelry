@@ -174,52 +174,6 @@ async function updateStock(productId, quantity) {
     await Product.findByIdAndUpdate(productId, { $inc: { piecesSold: quantity } });
   }
   
-  /**
-   * @desc    Confirm payment for an order
-   * @route   PUT /api/orders/:id/confirm-payment
-   * @access  Private
-   */
-//   exports.confirmPayment = asyncErrorHandler(async (orderId) => {
-
-//     const orderid = orderId;
-//     // const paymentDetails = req.body.paymentDetails; // Assuming payment details are received from Razorpay or COD confirmation
-  
-//     // Find the order by orderId
-//     const order = await Order.findById(orderid);
-//     const payment = await Payment.findOne(orderid);
-//     console.log(order);
-//     console.log(payment);
-  
-//     if (!order) {
-//       return next(new ErrorHandler("Order not found", 404));
-//     }
-//     console.log(paymentDetails);
-//     // Update order details post-payment confirmation
-//     order.paymentInfo = paymentDetails;
-//     order.paid = true; // Assuming payment is confirmed
-//     order.paidAt = Date.now(); // Set the payment timestamp
-  
-//     // Save the updated order
-//     await order.save();
-  
-//     // Update product stock and piecesSold asynchronously for each order item
-//     await Promise.all(order.orderItems.map(async (item) => {
-//       await updateStock(item.productId, item.quantity);
-//       await updatePiecesSold(item.productId, item.quantity);
-//     }));
-  
-//     // Send payment confirmation email to the user
-//     try {
-//       await sendPaymentConfirmationEmail(order.user.email, order._id, order.user.name);
-//     } catch (error) {
-//       return next(new ErrorHandler("Failed to send payment confirmation email", 500));
-//     }
-  
-//     res.status(200).json({
-//       success: true,
-//       order,
-//     });
-//   });
 exports.confirmPayment = asyncErrorHandler(async (orderId) => {
     try {
       const order = await Order.findById(orderId);

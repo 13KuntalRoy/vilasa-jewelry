@@ -10,12 +10,8 @@ exports.uploadDynamicImage = asyncErrorHandler(async (req, res, next) => {
   if (!req.files || !req.files.image) {
     return res.status(400).json({ success: false, message: "No image file was uploaded." });
   }
-
-  // Specify the folder where you want to upload the image in Cloudinary
-  const folder = 'dynamic-images'; // Change this to your desired folder name
-
   // Upload image to Cloudinary with specified folder
-  const result = await cloudinary.uploader.upload(req.files.image.tempFilePath, { folder });
+  const result = await cloudinary.uploader.upload(req.files.image.tempFilePath, { folder: 'dynamic-images' });
 
   // Save image URL and group to the database
   const dynamicImage = await DynamicImage.create({

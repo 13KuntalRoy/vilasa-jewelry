@@ -39,39 +39,3 @@ exports.getAllSubscribers = async (req, res) => {
     }
 };
 
-exports.downloadSubscribersAsExcel = async (req, res) => {
-    try {
-        const workbook = new exceljs.Workbook();
-        const worksheet = workbook.addWorksheet('Subscribers');
-        worksheet.columns = [{ header: 'Email', key: 'email' }];
-
-        // Find all subscribers
-        const allSubscribers = await Subscriber.find();
-
-        // Check if subscribers exist
-        if (!allSubscribers || allSubscribers.length === 0) {
-            return res.status(404).json({ error: 'No subscribers found' });
-        }
-
-        // Add each email to the worksheet
-        allSubscribers.forEach(subscriber => {
-            subscriber.email.forEach(email => {
-                worksheet.addRow({ email });
-            });
-        });
-
-        // Set headers to force download
-        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-        res.setHeader('Content-Disposition', 'attachment; filename=subscribers.xlsx');
-
-        // Debug: Log the generated Excel file
-        // console.log('Generated Excel:', workbook);
-
-        // Send the Excel file as a response
-        await workbook.xlsx.write(res);
-        res.status(200).end();
-    } catch (error) {
-        console.error('Error generating Excel file:', error);
-        res.status(500).json({ error: 'Internal Server Error' });
-    }
-};

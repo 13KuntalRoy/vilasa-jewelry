@@ -268,107 +268,7 @@ exports.addProductImage = async (req, res) => {
       });
   }
 };
-/**
- * @route   PUT /api/products/:id
- * @desc    Update a product
- * @access  Private (Admin)
- */
 
-// exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
-//   try {
-//     // Find the product by ID
-//     let product = await ProductModel.findById(req.params.id);
-
-//     // If product is not found, return an error
-//     if (!product) {
-//       return next(new ErrorHandler("Product not found", 404));
-//     }
-
-//     // Handle image upload if images are provided
-//     if (req.files.images) {
-//       let images = req.files.images;
-
-//       // Ensure images is an array
-//       if (!Array.isArray(images)) {
-//         images = [images];
-//       }
-
-//       // Delete existing images from Cloudinary
-//       for (let i = 0; i < product.images.length; i++) {
-//         await cloudinary.v2.uploader.destroy(product.images[i].public_id);
-//       }
-
-//       // Upload new images to Cloudinary
-//       const imagesLinks = [];
-//       for (let img of images) {
-//         const result = await cloudinary.v2.uploader.upload(img.tempFilePath, {
-//           folder: "Products",
-//         });
-
-//         imagesLinks.push({
-//           public_id: result.public_id,
-//           url: result.secure_url,
-//         });
-//       }
-
-//       // Update product data with new images
-//       req.body.images = imagesLinks;
-//     }
-
-//     // Update the product in the database
-//     product = await ProductModel.findByIdAndUpdate(
-//       req.params.id,
-//       req.body,
-//       {
-//         new: true,
-//         runValidators: true,
-//         useFindAndModify: false,
-//       }
-//     );
-
-//     // Send response with updated product
-//     res.status(200).json({
-//       success: true,
-//       product: product,
-//     });
-//   } catch (error) {
-//     // Handle errors
-//     console.error(error);
-//     next(new ErrorHandler(500, 'An error occurred while updating the product.'));
-//   }
-// });
-// exports.updateProduct = async (req, res) => {
-//   try {
-//       const { id } = req.params;
-//       const updatedData = req.body;
-
-//       // Ensure specifications is an array of objects
-//       if (updatedData.specifications && !Array.isArray(updatedData.specifications)) {
-//           return res.status(400).json({ success: false, message: 'Specifications must be an array of objects' });
-//       }
-
-//       // Update the product in the database
-//       const updatedProduct = await ProductModel.findByIdAndUpdate(id, updatedData, { new: true, runValidators: true });
-
-//       if (!updatedProduct) {
-//           return res.status(404).json({ success: false, message: 'Product not found' });
-//       }
-
-//       res.status(200).json({
-//           success: true,
-//           data: updatedProduct
-//       });
-//   } catch (error) {
-//       res.status(500).json({
-//           success: false,
-//           message: 'Server Error',
-//           error: error.message
-//       });
-//   }
-// }
-// @desc    Update product
-// @route   PUT /api/v1/products/:id
-// @access  Private/Admin
 exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
   let product = await ProductModel.findById(req.params.id);
 
@@ -411,13 +311,6 @@ exports.updateProduct = asyncErrorHandler(async (req, res, next) => {
     product.highlights = product.highlights.filter(highlight => !updateData.removeHighlights.includes(highlight));
   }
 
-    // Handle coupons removal
-  // Handle coupons removal
-  // if (updateData.removeCoupons) {
-  //   product.coupons = product.coupons.filter(coupon => !updateData.removeCoupons.includes(coupon.toString()));
-  // }
-
-  // Update the remaining product fields
   for (const key in updateData) {
     if (key !== 'specifications' && key !== 'removeSpecifications' && key !== 'removeHighlights' ) {
       product[key] = updateData[key];
@@ -615,63 +508,6 @@ exports.getProductDetails = asyncErrorHandler(async (req, res, next) => {
   }
 });
 
-
-// /**
-//  * @route   POST /api/products/:id/reviews
-//  * @desc    Create or update a product review
-//  * @access  Private
-//  */
-// exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
-//   const { ratings, comment, productId, title, recommend } = req.body;
-//   const review = {
-//     userId: req.user._id,
-//     name: req.user.name,
-//     ratings: Number(ratings),
-//     title: title,
-//     comment: comment,
-//     recommend: recommend,
-//     avatar: req.user.avatar.url, // Add user avatar URL to the review object
-//   };
-
-//   const product = await ProductModel.findById(productId);
-
-//   // check if user already reviewed
-//   const isReviewed = product.reviews.find((rev) => {
-//     return rev.userId.toString() === req.user._id.toString();
-//   });
-
-//   if (isReviewed) {
-//     // Update the existing review
-//     product.reviews.forEach((rev) => {
-//       if (rev.userId.toString() === req.user._id.toString()) {
-//         rev.ratings = ratings;
-//         rev.comment = comment;
-//         rev.recommend = recommend;
-        
-//         rev.title = title;
-//         product.numOfReviews = product.reviews.length;
-//       }
-//     });
-//   } else {
-//     // Add a new review
-//     product.reviews.push(review);
-//     product.numOfReviews = product.reviews.length;
-//   }
-
-//   // Calculate average ratings
-//   let totalRatings = 0;
-//   product.reviews.forEach((rev) => {
-//     totalRatings += rev.ratings;
-//   });
-//   product.ratings = totalRatings / product.reviews.length;
-
-//   // Save to the database
-//   await product.save({ validateBeforeSave: false });
-
-//   res.status(200).json({
-//     success: true,
-//   });
-// });
 exports.createProductReview = asyncErrorHandler(async (req, res, next) => {
   try {
     const { ratings, comment} = req.body;
@@ -911,24 +747,7 @@ exports.getTopRatedProducts = asyncErrorHandler( async (req, res, next) => {
     });
   }
 });
-/**
- * @route   GET /api/products/related/:id
- * @desc    Get related products
- * @access  Public
- */
-// exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
-//     const productId = req.params.id;
-//     const product = await ProductModel.findById(productId);
-//     const relatedProducts = await ProductModel.find({
-//         $or: [{ category: product.category }, { "brand.name": product.brand.name }],
-//         _id: { $ne: productId }
-//     }).limit(4);
 
-//     res.status(200).json({
-//         success: true,
-//         products: relatedProducts,
-//     });
-// });
 exports.getRelatedProducts = asyncErrorHandler(async (req, res, next) => {
   const productId = req.params.id;
 
@@ -1408,29 +1227,7 @@ exports.getReviewsForLandingPage = asyncErrorHandler(async (req, res, next) => {
     return next(new ErrorHandler('Failed to fetch reviews for landing page', 500));
   }
 });
-/**
- * @route   GET /api/products/reviews
- * @desc    Get all product reviews
- * @access  Public
- */
-// exports.getAllProductReviews = async (req, res) => {
-//   try {
-//     // Find all products and select only the 'reviews' field
-//     const reviews = await ProductModel.find({}, 'reviews');
 
-//     // Extract reviews from the products
-//     const allReviews = reviews.reduce((accumulator, current) => accumulator.concat(current.reviews), []);
-
-//     // Send success response with all reviews
-//     res.status(200).json({
-//       success: true,
-//       reviews: allReviews,
-//     });
-//   } catch (error) {
-//     // Handle any errors that occur
-//     res.status(500).json({ success: false, message: 'Failed to fetch all product reviews' });
-//   }
-// };
 exports.getAllProductReviews = async (req, res) => {
   try {
     // Find all products and populate the 'user' field in reviews
