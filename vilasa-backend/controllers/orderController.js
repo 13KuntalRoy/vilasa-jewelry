@@ -316,7 +316,7 @@ exports.getSingleOrderDetails = asyncErrorHandler(async (req, res, next) => {
 exports.myOrders = asyncErrorHandler(async (req, res, next) => {
     try {
         // Find orders associated with the logged-in user
-        const orders = await Order.find({ user: req.user._id }).populate("productId");
+        const orders = await Order.find({ user: req.user._id }) .populate({ path: "orderItems.productId", })
 
         // Check if orders exist
         if (!orders || orders.length === 0) {
