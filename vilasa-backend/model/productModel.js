@@ -111,7 +111,7 @@ const productSchema = new mongoose.Schema({
   },
   material:{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Brand',
+    ref: 'Material',
     default:''
   },
   SKU:{
