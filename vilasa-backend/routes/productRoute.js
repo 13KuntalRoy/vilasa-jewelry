@@ -43,7 +43,11 @@ const {
     addProductHighlight,
     deleteProductHighlight,
     deleteReviewById,
-    updateShowOnLandingPage
+    updateShowOnLandingPage,
+    createMaterial,
+    getAllMaterials,
+    updateMaterial,
+    deleteMaterial
 } = require('../controllers/productController');
 
 // Routes for products
@@ -109,7 +113,12 @@ router.route('/brands/:id')
 router.route('/categories/:id')
   .put(isAuthenticatedUser, authorizeRoles('admin'),updateCategory)
   .delete(isAuthenticatedUser, authorizeRoles('admin'),deleteCategory);
-
+router.route('/materials')
+  .post(isAuthenticatedUser, authorizeRoles('admin'), createMaterial)
+  .get(getAllMaterials);
+router.route('/materials/:id')
+  .put(isAuthenticatedUser, authorizeRoles('admin'),updateMaterial)
+  .delete(isAuthenticatedUser, authorizeRoles('admin'),deleteMaterial);
 // Coupons Routes
 router.route('/coupons')
   .post(isAuthenticatedUser, authorizeRoles('admin'),createCoupon)

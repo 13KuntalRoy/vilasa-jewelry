@@ -66,6 +66,10 @@ const couponSchema = new mongoose.Schema({
       // Explanation: Custom validation message for invalid discount values.
     },
   },
+  description:{
+    type: String,
+    
+  }
 });
 
 // Export the model

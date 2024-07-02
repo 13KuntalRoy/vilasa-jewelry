@@ -7,6 +7,7 @@ const asyncErrorHandler = require("../middleware/asyncErrorHandler");
 const SearchFeatures = require("../utils/searchFeatures");
 const cloudinary = require("cloudinary");
 const productModel = require('../model/productModel');
+const Material = require('../model/Material');
 
 
 /**
@@ -1085,8 +1086,8 @@ exports.deleteCategory = async (req, res, next) => {
 // Create a new coupon
 exports.createCoupon = async (req, res, next) => {
   try {
-    const { name, expiry, discount,validateamount } = req.body;
-    const coupon = await Coupon.create({ name, expiry, discount,validateamount });
+    const { name, expiry, discount,validateamount,description } = req.body;
+    const coupon = await Coupon.create({ name, expiry, discount,validateamount,description });
     res.status(201).json({ success: true, coupon });
   } catch (error) {
     next(new ErrorHandler(error.message, 400));
@@ -1103,8 +1104,8 @@ exports.getAllCoupons = asyncErrorHandler(async (req, res, next) => {
 exports.updateCoupon = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { name, expiry, discount,validateamount } = req.body;
-    const updatedCoupon = await Coupon.findByIdAndUpdate(id, { name, expiry, discount,validateamount }, { new: true });
+    const { name, expiry, discount,validateamount,description } = req.body;
+    const updatedCoupon = await Coupon.findByIdAndUpdate(id, { name, expiry, discount,validateamount,description }, { new: true });
     if (!updatedCoupon) {
       return res.status(404).json({ success: false, message: 'Coupon not found' });
     }
@@ -1401,3 +1402,82 @@ exports.updateShowOnLandingPage = async (req, res, next) => {
     console.error('Error updating showOnLandingPage:', error);
     res.status(500).json({ message: 'Internal server error' });
   }};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  exports.createMaterial = async (req, res, next) => {
+    try {
+      const { title} = req.body;
+      let material;     // If no image provided, create category without image
+      material= await Materialcreate({ title });
+      res.status(201).json({ success: true, material });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  };
+  
+  exports.updateMaterial = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+      const { title } = req.body;
+      let updatedMaterial;
+  
+      const existingMaterial = await Material.findById(id);
+  
+      if (!existingMaterial) {
+        return res.status(404).json({ success: false, message: 'Material not found' });
+      }
+      updatedMaterial = await Material.findByIdAndUpdate(id, { title }, { new: true });
+
+      res.status(200).json({ success: true, material: updatedMaterial});
+    } catch (error) {
+      next(error); // Pass the error to the error handler middleware
+    }
+  };
+  
+  exports.getAllMaterials = async (req, res, next) => {
+    try {
+      const materials = await Material.find();
+      if (!materials|| materials.length === 0) {
+        return res.status(404).json({ success: false, message: 'No materials found' });
+      }
+      
+      // Map categories to include image URLs
+      const materialsWith= materials.map(material => ({
+        _id: material._id,
+        title: material.title,
+      }));
+  
+      res.status(200).json({ success: true, materials: materialsWith });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 500));
+    }
+  };
+  
+  exports.deleteMaterial = async (req, res, next) => {
+    try {
+      const { id } = req.params;
+  
+      // Find the category to be deleted
+      const deletedMaterial = await Material.findByIdAndDelete(id);
+  
+      if (!deletedMaterial) {
+        return res.status(404).json({ success: false, message: 'Material not found' });
+      }
+  
+      res.status(200).json({ success: true, message: 'Material deleted successfully' });
+    } catch (error) {
+      next(new ErrorHandler(error.message, 400));
+    }
+  }
