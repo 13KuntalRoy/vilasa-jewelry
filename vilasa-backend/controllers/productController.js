@@ -1209,18 +1209,24 @@ function shuffleArray(array) {
  */
 exports.getReviewsForLandingPage = asyncErrorHandler(async (req, res, next) => {
   try {
-    // Find reviews where showOnLandingPage is true
-    const reviews = await ProductModel.find({ 'reviews.showOnLandingPage': true });
+    const reviews = await ProductModel.aggregate([
+      { $unwind: '$reviews' }, // Deconstruct the reviews array
+      { $match: { 'reviews.showOnLandingPage': true } }, // Filter reviews that should be shown on landing page
+      { $project: { _id: 0, reviews: 1 } } // Project only the reviews field
+    ]);
+
+    // Extract the reviews from the result
+    const landingPageReviews = reviews.map(r => r.reviews);
 
     // Check if reviews were found
-    if (!reviews || reviews.length === 0) {
+    if (!landingPageReviews || landingPageReviews.length === 0) {
       return next(new ErrorHandler('No reviews found for landing page', 404));
     }
 
     // Send success response with reviews
     res.status(200).json({
       success: true,
-      reviews: reviews,
+      reviews: landingPageReviews,
     });
   } catch (error) {
     // Handle any errors that occur
