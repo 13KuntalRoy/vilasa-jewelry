@@ -1420,7 +1420,7 @@ exports.updateShowOnLandingPage = async (req, res, next) => {
     try {
       const { title} = req.body;
       let material;     // If no image provided, create category without image
-      material= await Materialcreate({ title });
+      material= await Material.create({ title });
       res.status(201).json({ success: true, material });
     } catch (error) {
       next(new ErrorHandler(error.message, 400));
