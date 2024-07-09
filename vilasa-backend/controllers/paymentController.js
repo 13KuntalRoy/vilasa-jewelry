@@ -3,7 +3,6 @@ const Razorpay = require("razorpay");
 const Order =require("../model/orderModel")
 const Payment = require("../model/paymentModel");
 const ErrorHandler = require("../utils/errorHandler");
-const crypto = require('crypto');
 const { confirmPayment } = require("./orderController");
 // Initialize Razorpay instance
 const razorpay = new Razorpay({
@@ -126,61 +125,63 @@ const handlePaymentCaptured = async (entity) => {
 const addPayment = async (data) => {
   try {
     console.log(data);
-    if (!data.entity || !data.id || !data.amount || !data.currency || !data.status) {
+    if (!data.id || !data.amount || !data.currency || !data.status) {
       throw new ErrorHandler("Invalid payment data received", 400);
     }
+
+    const convertToRupees = (amountInPaisa) => (amountInPaisa / 100).toFixed(2);
 
     const payment = await Payment.create({
       orderId: data.notes.orderId || "NA",
       txnId: data.id,
-      amount: data.amount,
+      amount: convertToRupees(data.amount),
       currency: data.currency,
-      txnAmount: data.tax || 0,
+      txnAmount: convertToRupees(data.tax || 0),
       status: data.status,
-      name: data.payload.payment.entity.prefill?.name || "NA",
-      email: data.payload.payment.entity.prefill?.email || "NA",
-      contact: data.payload.payment.entity.prefill?.contact || "NA",
+      name: data.notes.name || "NA",
+      email: data.notes.email || "NA",
+      contact: data.notes.contact || "NA",
       resultInfo: {
-        resultStatus: data.entity.status,
-        resultCode: data.entity.error_code || "NA",
-        resultMsg: data.entity.error_description || "NA",
+        resultStatus: data.status,
+        resultCode: data.error_code || "NA",
+        resultMsg: data.error_description || "NA",
       },
-      bankTxnId: data.entity.bank_transaction_id || "NA",
+      bankTxnId: data.acquirer_data?.bank_transaction_id || "NA",
       razorpayOrderId: data.order_id,
-      txnDate: new Date(data.payload.created_at * 1000).toISOString() || new Date().toISOString(),
+      txnDate: new Date(data.created_at * 1000).toISOString() || new Date().toISOString(),
       gatewayName: 'Razorpay',
-      userId: data.payload.payment.entity.notes?.userId || "NA",
-      paymentMode: data.entity.method || "NA",
-      bankName: data.entity.bank || "NA",
-      mid: data.entity.merchant_id || "NA",
-      refundAmt: data.entity.amount_refunded || 0,
-      baseAmount: data.entity.base_amount || 0,
-      international: data.entity.international || false,
-      captured: data.entity.captured || false,
-      description: data.entity.description || "NA",
-      cardId: data.entity.card_id || "NA",
-      wallet: data.entity.wallet || "NA",
-      vpa: data.entity.vpa || "NA",
-      fee: data.entity.fee || 0,
-      tax: data.entity.tax || 0,
-      errorCode: data.entity.error_code || "NA",
-      errorDescription: data.entity.error_description || "NA",
-      errorSource: data.entity.error_source || "NA",
-      errorStep: data.entity.error_step || "NA",
-      errorReason: data.entity.error_reason || "NA",
+      userId: data.notes?.userId || "NA",
+      paymentMode: data.method || "NA",
+      bankName: data.bank || "NA",
+      mid: data.merchant_id || "NA",
+      refundAmt: convertToRupees(data.amount_refunded || 0),
+      baseAmount: convertToRupees(data.base_amount || 0),
+      international: data.international || false,
+      captured: data.captured || false,
+      description: data.description || "NA",
+      cardId: data.card_id || "NA",
+      wallet: data.wallet || "NA",
+      vpa: data.vpa || "NA",
+      fee: convertToRupees(data.fee || 0),
+      tax: convertToRupees(data.tax || 0),
+      errorCode: data.error_code || "NA",
+      errorDescription: data.error_description || "NA",
+      errorSource: data.error_source || "NA",
+      errorStep: data.error_step || "NA",
+      errorReason: data.error_reason || "NA",
       acquirerData: {
-        rrn: data.entity.acquirer_data?.rrn || "NA",
+        rrn: data.acquirer_data?.rrn || "NA",
       },
       upi: {
-        payer_account_type: data.payload.payment.entity.upi?.payer_account_type || "NA",
-        flow: data.payload.payment.entity.upi?.flow || "NA",
-        vpa: data.payload.payment.entity.upi?.vpa || "NA",
+        payer_account_type: data.upi?.payer_account_type || "NA",
+        flow: data.upi?.flow || "NA",
+        vpa: data.upi?.vpa || "NA",
       },
-      invoiceId: data.entity.invoice_id || "NA",
-      international: data.entity.international || false,
-      amountTransferred: data.entity.amount_transferred || 0,
-      refundStatus: data.entity.refund_status || "NA",
-      created_at: new Date(data.payload.created_at * 1000).toISOString() || new Date().toISOString(),
+      invoiceId: data.invoice_id || "NA",
+      international: data.international || false,
+      amountTransferred: convertToRupees(data.amount_transferred || 0),
+      refundStatus: data.refund_status || "NA",
+      created_at: new Date(data.created_at * 1000).toISOString() || new Date().toISOString(),
     });
 
     console.log(`Payment successfully recorded: ${payment}`);
@@ -189,6 +190,7 @@ const addPayment = async (data) => {
     throw new ErrorHandler("Payment processing failed", 500);
   }
 };
+
 
 
 /**
