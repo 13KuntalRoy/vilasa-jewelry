@@ -71,7 +71,10 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
 
     if (!event || !payload) {
       return next(new ErrorHandler("Invalid payload structure", 400));
+
     }
+    console.log("====",payload);
+    console.log("event",event);
 
     const entity = payload.payment.entity;
 
@@ -123,17 +126,17 @@ const handlePaymentCaptured = async (entity) => {
 const addPayment = async (data) => {
   try {
     console.log(data);
-    if (!data.entity || !data.payload || !data.entity.id || !data.entity.amount || !data.entity.currency || !data.entity.status) {
+    if (!data.entity || !data.id || !data.amount || !data.currency || !data.status) {
       throw new ErrorHandler("Invalid payment data received", 400);
     }
 
     const payment = await Payment.create({
-      orderId: data.payload.payment.entity.order_id || "NA",
-      txnId: data.entity.id,
-      amount: data.entity.amount,
-      currency: data.entity.currency,
-      txnAmount: data.entity.tax || 0,
-      status: data.entity.status,
+      orderId: data.notes.orderId || "NA",
+      txnId: data.id,
+      amount: data.amount,
+      currency: data.currency,
+      txnAmount: data.tax || 0,
+      status: data.status,
       name: data.payload.payment.entity.prefill?.name || "NA",
       email: data.payload.payment.entity.prefill?.email || "NA",
       contact: data.payload.payment.entity.prefill?.contact || "NA",
@@ -143,7 +146,7 @@ const addPayment = async (data) => {
         resultMsg: data.entity.error_description || "NA",
       },
       bankTxnId: data.entity.bank_transaction_id || "NA",
-      razorpayOrderId: data.payload.payment.entity.order_id,
+      razorpayOrderId: data.order_id,
       txnDate: new Date(data.payload.created_at * 1000).toISOString() || new Date().toISOString(),
       gatewayName: 'Razorpay',
       userId: data.payload.payment.entity.notes?.userId || "NA",
