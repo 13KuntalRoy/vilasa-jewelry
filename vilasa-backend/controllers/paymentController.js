@@ -121,6 +121,7 @@ const handlePaymentCaptured = async (entity) => {
 
 const addPayment = async (data) => {
   try {
+    console.log(data);
     if (!data.entity || !data.payload || !data.entity.id || !data.entity.amount || !data.entity.currency || !data.entity.status) {
       throw new ErrorHandler("Invalid payment data received", 400);
     }
