@@ -75,6 +75,7 @@ exports.razorpayWebhook = asyncWrapper(async (req, res, next) => {
 
     const entity = payload.payment.entity;
 
+    console.log("*****",entity);
     switch (event) {
       case 'payment.authorized':
         await handlePaymentAuthorized(entity);
