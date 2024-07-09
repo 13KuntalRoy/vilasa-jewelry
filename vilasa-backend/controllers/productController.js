@@ -192,7 +192,8 @@ exports.getAllProducts = async (req, res) => {
       .skip(skip)
       .limit(resultPerPage)
       .populate('category')
-      .populate('brand');
+      .populate('brand')
+      .populate('material');
 
     // Send the response with products data and pagination info
     res.status(200).json({
